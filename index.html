@@ -1810,385 +1810,418 @@
             });
         }
 
-        window.google = window.google || {};
-        window.google.script = window.google.script || {};
-        window.google.script.run = {
-            _successHandler: null,
-            _failureHandler: null,
-            withSuccessHandler: function(handler) {
-                this._successHandler = handler;
-                return this;
-            },
-            withFailureHandler: function(handler) {
-                this._failureHandler = handler;
-                return this;
-            },
-            apiCall: function(action, payloadStr) {
-                let data = {};
-                if (payloadStr) {
-                    try {
-                        data = typeof payloadStr === 'string' ? JSON.parse(payloadStr) : payloadStr;
-                    } catch(e) {
-                        data = payloadStr;
-                    }
+        function handleGASApi(action, data) {
+            let siswas = (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
+            try {
+                const saved = localStorage.getItem('alimam_pgtk_siswas');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) siswas = parsed;
                 }
-                
-                setTimeout(() => {
-                    let result = { status: true, data: null };
-                    try {
-                        if (action === 'getSiswa') {
-                            let siswas = typeof SEED_SISWAS !== 'undefined' ? SEED_SISWAS : [];
-                            try {
-                                const saved = localStorage.getItem('alimam_pgtk_siswas');
-                                if (saved) siswas = JSON.parse(saved);
-                            } catch(e) {}
-                            result = { status: true, data: siswas };
-                        } else if (action === 'getIKTP') {
-                            const targetElemen = (data && data.elemen) ? String(data.elemen).trim().toLowerCase() : '';
-                            const allIktp = typeof SEED_IKTP !== 'undefined' ? SEED_IKTP : [];
-                            const filtered = targetElemen ? allIktp.filter(i => String(i.elemen).trim().toLowerCase() === targetElemen) : allIktp;
-                            result = { status: true, data: filtered };
-                        } else if (action === 'getTK_Checklist') {
-                            const nis = String(data.nis || '').trim();
-                            const sem = String(data.semester || '1').trim();
-                            let savedChecklist = [];
-                            try {
-                                const stored = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
-                                if (stored) {
-                                    savedChecklist = JSON.parse(stored);
-                                } else {
-                                    // Generate default checklist ratings for initial view
-                                    const allIktp = typeof SEED_IKTP !== 'undefined' ? SEED_IKTP : [];
-                                    const siswas = typeof SEED_SISWAS !== 'undefined' ? SEED_SISWAS : [];
-                                    const student = siswas.find(s => String(s.nis).trim() === nis);
-                                    const sClass = student ? (student.kelas_id || '') : '';
-                                    const defaultRatings = ['BSH', 'BSB', 'BSH', 'BSB', 'MB'];
-                                    
-                                    savedChecklist = allIktp.filter(i => {
-                                        const iClass = i.kelas || i.tujuan_pembelajaran || '';
-                                        return !iClass || !sClass || sClass.toUpperCase().includes(iClass.toUpperCase());
-                                    }).map((item, idx) => {
-                                        const isEng = ['ESL English Program', 'Mathematic', 'Science'].includes(item.elemen);
-                                        const val = isEng ? (idx % 3 === 0 ? 'E' : (idx % 3 === 1 ? 'G' : 'G')) : defaultRatings[idx % defaultRatings.length];
-                                        return {
-                                            id_nilai: `${nis}_${sem}_${item.id_iktp}`,
-                                            nis: nis,
-                                            semester: sem,
-                                            category: item.elemen,
-                                            id_iktp: item.id_iktp,
-                                            nilai: val
-                                        };
-                                    });
-                                }
-                            } catch(e) {}
-                            result = { status: true, data: savedChecklist };
-                        } else if (action === 'saveTK_Checklist') {
-                            const nis = String(data.nis || '').trim();
-                            const sem = String(data.semester || '1').trim();
-                            const category = data.category;
-                            const ratings = data.ratings || {};
-                            
-                            let currentList = [];
-                            try {
-                                const stored = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
-                                if (stored) currentList = JSON.parse(stored);
-                            } catch(e) {}
+            } catch(e) {}
 
-                            Object.keys(ratings).forEach(idIktp => {
-                                const val = ratings[idIktp];
-                                const existingIdx = currentList.findIndex(item => item.id_iktp === idIktp);
-                                if (existingIdx >= 0) {
-                                    currentList[existingIdx].nilai = val;
-                                } else {
-                                    currentList.push({
-                                        id_nilai: `${nis}_${sem}_${idIktp}`,
-                                        nis: nis,
-                                        semester: sem,
-                                        category: category,
-                                        id_iktp: idIktp,
-                                        nilai: val
-                                    });
-                                }
-                            });
-                            localStorage.setItem(`alimam_checklist_${nis}_${sem}`, JSON.stringify(currentList));
-                            result = { status: true, message: 'Berhasil menyimpan checklist' };
-                        } else if (action === 'getReportTK') {
-                            const nis = String(data.nis || '').trim();
-                            const sem = String(data.semester || '1').trim();
-                            const allIktp = typeof SEED_IKTP !== 'undefined' ? SEED_IKTP : [];
-                            const siswas = typeof SEED_SISWAS !== 'undefined' ? SEED_SISWAS : [];
-                            const student = siswas.find(s => String(s.nis).trim() === nis) || { nama_lengkap: 'Ananda', kelas_id: 'TK' };
+            const allIktp = (typeof SEED_IKTP !== 'undefined') ? SEED_IKTP : [];
 
-                            let savedChecklist = [];
-                            try {
-                                const storedChk = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
-                                if (storedChk) {
-                                    savedChecklist = JSON.parse(storedChk);
-                                } else {
-                                    const defaultRatings = ['BSH', 'BSB', 'BSH', 'BSB', 'MB'];
-                                    const sClass = student.kelas_id || '';
-                                    savedChecklist = allIktp.filter(i => {
-                                        const iClass = i.kelas || i.tujuan_pembelajaran || '';
-                                        return !iClass || !sClass || sClass.toUpperCase().includes(iClass.toUpperCase());
-                                    }).map((item, idx) => {
-                                        const isEng = ['ESL English Program', 'Mathematic', 'Science'].includes(item.elemen);
-                                        const val = isEng ? (idx % 3 === 0 ? 'E' : (idx % 3 === 1 ? 'G' : 'G')) : defaultRatings[idx % defaultRatings.length];
-                                        return {
-                                            id_nilai: `${nis}_${sem}_${item.id_iktp}`,
-                                            nis: nis,
-                                            semester: sem,
-                                            category: item.elemen,
-                                            id_iktp: item.id_iktp,
-                                            nilai: val
-                                        };
-                                    });
-                                }
-                            } catch(e) {}
-
-                            let savedNarasi = [];
-                            try {
-                                const storedNarasi = localStorage.getItem(`alimam_narasi_${nis}_${sem}`);
-                                if (storedNarasi) {
-                                    savedNarasi = JSON.parse(storedNarasi);
-                                } else {
-                                    const affirmation = student.parentAffirmation || 'Ananda tumbuh dengan sangat baik, ceria, mandiri, dan aktif mengikuti seluruh kegiatan pembelajaran.';
-                                    savedNarasi = [
-                                        { elemen: 'Nilai Agama & Budi Pekerti', teks_narasi: `Alhamdulillah, selama semester ${sem} ini Ananda menunjukkan perkembangan yang sangat memuaskan dalam pembiasaan adab Islami, hafalan doa harian, dan melafalkan kalimat thayyibah bersama guru dan teman.`, foto_url: '' },
-                                        { elemen: 'Jati Diri', teks_narasi: `Ananda memiliki rasa percaya diri yang baik, mampu berinteraksi positif dengan teman sebaya, serta menunjukkan kemandirian dalam merawat diri dan lingkungan sekitar. ${affirmation}`, foto_url: '' },
-                                        { elemen: 'Dasar Literasi & STEAM', teks_narasi: `Ananda aktif dalam kegiatan membaca cerita bergambar, mampu mengekspresikan gagasan melalui karya seni visual, dan memiliki rasa ingin tahu yang tinggi dalam eksplorasi sains sederhana.`, foto_url: '' },
-                                        { elemen: 'Kokurikuler / Dimensi Profil Lulusan', teks_narasi: `Ananda senantiasa menunjukkan sikap gotong royong, nalar kritis saat bertanya, serta kedisiplinan dalam mengikuti rutinitas sekolah dengan gembira.`, foto_url: '' },
-                                        { elemen: 'Laporan Perkembangan Diniyyah', teks_narasi: `Alhamdulillah, Ananda antusias dalam menghafal surat-surat pendek (Juz 'Amma) dan mempraktikkan gerakan wudhu serta sholat dengan bimbingan ustadzah.`, foto_url: '' },
-                                        { elemen: 'ESL English Program', teks_narasi: `Ananda is able to understand simple daily classroom instructions and actively repeats greetings, color names, and numbers in English with confidence.`, foto_url: '' },
-                                        { elemen: 'Mathematic', teks_narasi: `Ananda can recognize basic geometric shapes, compare sizes, and count objects sequentially up to 20 with good concentration.`, foto_url: '' },
-                                        { elemen: 'Science', teks_narasi: `Ananda shows great curiosity during hands-on science experiments, observing nature and changes of matter with enthusiasm.`, foto_url: '' }
-                                    ];
-                                }
-                            } catch(e) {}
-
-                            result = {
-                                status: true,
-                                data: {
-                                    observasi: [],
-                                    narasi: savedNarasi,
-                                    iktp: allIktp,
-                                    checklist: savedChecklist
-                                }
-                            };
-                        } else if (action === 'saveTK') {
-                            const nis = String(data.nis || '').trim();
-                            const sem = String(data.semester || '1').trim();
-                            const elemen = data.elemen;
-                            let currentNarasi = [];
-                            try {
-                                const stored = localStorage.getItem(`alimam_narasi_${nis}_${sem}`);
-                                if (stored) currentNarasi = JSON.parse(stored);
-                            } catch(e) {}
-                            
-                            const idx = currentNarasi.findIndex(n => n.elemen === elemen);
-                            if (idx >= 0) {
-                                currentNarasi[idx].teks_narasi = data.teks_narasi;
-                                if (data.foto_url !== undefined) currentNarasi[idx].foto_url = data.foto_url;
-                            } else {
-                                currentNarasi.push({
-                                    elemen: elemen,
-                                    teks_narasi: data.teks_narasi,
-                                    foto_url: data.foto_url || ''
-                                });
-                            }
-                            localStorage.setItem(`alimam_narasi_${nis}_${sem}`, JSON.stringify(currentNarasi));
-                            result = { status: true, message: 'Narasi berhasil disimpan' };
-                        } else if (action === 'uploadFile') {
-                            result = { status: true, data: { url: data.base64 } };
-                        } else if (action === 'genAI') {
-                            const nama = data.nama || 'Ananda';
-                            const elemen = data.elemen || 'Perkembangan';
-                            result = {
-                                status: true,
-                                data: `Alhamdulillah, dalam elemen ${elemen}, Ananda ${nama} menunjukkan capaian yang sangat baik dan berkembang sesuai usianya. Ananda aktif, antusias mengikuti setiap kegiatan terpadu, serta mampu bekerja sama dan mandiri bersama teman-temannya di kelas.`
-                            };
-                        }
-                    } catch(err) {
-                        console.error('apiCall error:', err);
-                        result = { status: false, message: err.message };
-                    }
-
-                    if (this._successHandler) {
-                        this._successHandler(result);
-                    }
-                }, 60);
-                return this;
+            if (action === 'getSiswa') {
+                return { status: true, data: siswas };
             }
-        };
 
-        // Original TK_View_Checklist Controller
-        function tkChecklistInput() {
-        return {
-            listSiswa: [],
-            listIndicators: [],
-            selectedNis: '',
-            semester: '1',
-            category: 'Agama',
-            filterKelas: '',
-            filterGuru: '',
-            ratings: {}, // Map of id_iktp -> rating (e.g., 'BB', 'MB', 'BSH', 'BSB', 'NI', 'G', 'E')
-            loading: false,
-            saving: false,
+            if (action === 'getIKTP') {
+                const targetElemen = (data && data.elemen) ? String(data.elemen).trim().toLowerCase() : '';
+                const filtered = targetElemen ? allIktp.filter(i => String(i.elemen || '').trim().toLowerCase() === targetElemen) : allIktp;
+                return { status: true, data: filtered };
+            }
 
-            defaultTeachers: [
-                'Bu Nurlaela',
-                'Ustadzah Nur Hikmah',
-                'Ustadzah Halizah',
-                'Ustadzah Muttia Ghina',
-                'Ustadzah Dian',
-                'Ustadzah Sahla'
-            ],
-
-            getStudentClass() {
-                const s = this.listSiswa.find(x => x.nis === this.selectedNis);
-                return s ? s.kelas_id : '';
-            },
-
-            init() {
-                this.loadSiswa();
-            },
-
-            loadSiswa() {
-                google.script.run.withSuccessHandler(res => {
-                    this.listSiswa = res?.data || [];
-                }).apiCall('getSiswa');
-            },
-
-            get availableWaliList() {
-                const names = new Set();
-                this.listSiswa.forEach(s => {
-                    if (s.wali_kelas) names.add(s.wali_kelas);
-                });
-                this.defaultTeachers.forEach(t => names.add(t));
-                return Array.from(names);
-            },
-
-            getAssignedWali(kelasId) {
-                const c = (kelasId || '').toUpperCase();
-                if (c.includes('PLAYGROUP') || c === 'PG') return 'Bu Nurlaela';
-                if (c === 'TK A') return 'Ustadzah Dian / Sahla';
-                if (c === 'TK B') return 'Ustadzah Nur Hikmah / Halizah / Muttia';
-                return '';
-            },
-
-            get listSiswaFiltered() {
-                return this.listSiswa.filter(s => {
-                    if (this.filterKelas) {
-                        const targetK = this.filterKelas.toUpperCase();
-                        const sK = (s.kelas_id || '').toUpperCase();
-                        if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
-                        if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
-                    }
-
-                    if (this.filterGuru) {
-                        const sWali = s.wali_kelas || this.getAssignedWali(s.kelas_id);
-                        if (!sWali.toLowerCase().includes(this.filterGuru.toLowerCase())) return false;
-                    }
-
-                    return true;
-                });
-            },
-
-            isEnglishMathScience() {
-                return ['English', 'Math', 'Science'].includes(this.category);
-            },
-
-            getCategoryLabel() {
-                const maps = {
-                    'Agama': 'Nilai Agama & Budi Pekerti',
-                    'Jati Diri': 'Jati Diri',
-                    'Literasi & STEAM': 'Dasar Literasi & STEAM',
-                    'Kokurikuler': 'Kokurikuler / Dimensi Profil Lulusan',
-                    'Diniyah': 'Laporan Perkembangan Diniyyah',
-                    'English': 'ESL English Program',
-                    'Math': 'Mathematic',
-                    'Science': 'Science'
-                };
-                return maps[this.category] || this.category;
-            },
-
-            loadIndicators() {
-                if (!this.category) return;
-                this.loading = true;
-                this.listIndicators = [];
-                google.script.run.withSuccessHandler(res => {
-                    this.listIndicators = res?.data || [];
-                    this.loadRatings();
-                }).apiCall('getIKTP', JSON.stringify({ elemen: this.getCategoryLabel() }));
-            },
-
-            loadRatings() {
-                if (!this.selectedNis || !this.semester || this.listIndicators.length === 0) {
-                    this.loading = false;
-                    return;
-                }
-                this.loading = true;
-                google.script.run.withSuccessHandler(res => {
-                    // Reset ratings
-                    this.ratings = {};
-                    
-                    // Initialize with empty strings for all loaded indicators
-                    this.listIndicators.forEach(item => {
-                        this.ratings[item.id_iktp] = '';
-                    });
-
-                    // Populate with fetched ratings
-                    if (res && res.data) {
-                        res.data.forEach(row => {
-                            if (this.ratings[row.id_iktp] !== undefined) {
-                                this.ratings[row.id_iktp] = row.nilai;
-                            }
+            if (action === 'getTK_Checklist') {
+                const nis = String(data.nis || '').trim();
+                const sem = String(data.semester || '1').trim();
+                let savedChecklist = [];
+                try {
+                    const stored = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
+                    if (stored) {
+                        savedChecklist = JSON.parse(stored);
+                    } else {
+                        const student = siswas.find(s => String(s.nis).trim() === nis);
+                        const sClass = student ? (student.kelas_id || '') : '';
+                        const defaultRatings = ['BSH', 'BSB', 'BSH', 'BSB', 'MB'];
+                        savedChecklist = allIktp.filter(i => {
+                            const iClass = i.kelas || i.tujuan_pembelajaran || '';
+                            return !iClass || !sClass || sClass.toUpperCase().includes(iClass.toUpperCase());
+                        }).map((item, idx) => {
+                            const isEng = ['ESL English Program', 'Mathematic', 'Science'].includes(item.elemen);
+                            const val = isEng ? (idx % 3 === 0 ? 'E' : (idx % 3 === 1 ? 'G' : 'G')) : defaultRatings[idx % defaultRatings.length];
+                            return {
+                                id_nilai: `${nis}_${sem}_${item.id_iktp}`,
+                                nis: nis,
+                                semester: sem,
+                                category: item.elemen,
+                                id_iktp: item.id_iktp,
+                                nilai: val
+                            };
                         });
                     }
-                    this.loading = false;
-                }).apiCall('getTK_Checklist', JSON.stringify({ nis: this.selectedNis, semester: this.semester }));
-            },
+                } catch(e) {}
+                return { status: true, data: savedChecklist };
+            }
 
-            saveRatings() {
-                if (!this.selectedNis) return alert("Pilih Siswa!");
+            if (action === 'saveTK_Checklist') {
+                const nis = String(data.nis || '').trim();
+                const sem = String(data.semester || '1').trim();
+                const category = data.category;
+                const ratings = data.ratings || {};
                 
-                // Validate that at least some ratings are filled
-                const ratingsToSave = {};
-                let count = 0;
-                Object.keys(this.ratings).forEach(idIktp => {
-                    if (this.ratings[idIktp]) {
-                        ratingsToSave[idIktp] = this.ratings[idIktp];
-                        count++;
+                let currentList = [];
+                try {
+                    const stored = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
+                    if (stored) currentList = JSON.parse(stored);
+                } catch(e) {}
+
+                Object.keys(ratings).forEach(idIktp => {
+                    const val = ratings[idIktp];
+                    const existingIdx = currentList.findIndex(item => item.id_iktp === idIktp);
+                    if (existingIdx >= 0) {
+                        currentList[existingIdx].nilai = val;
+                    } else {
+                        currentList.push({
+                            id_nilai: `${nis}_${sem}_${idIktp}`,
+                            nis: nis,
+                            semester: sem,
+                            category: category,
+                            id_iktp: idIktp,
+                            nilai: val
+                        });
                     }
                 });
-
-                if (count === 0) {
-                    return alert("Mohon berikan setidaknya satu penilaian skala perkembangan sebelum menyimpan.");
-                }
-
-                this.saving = true;
-                google.script.run.withSuccessHandler(res => {
-                    this.saving = false;
-                    if (res && res.status) {
-                        alert(`Berhasil menyimpan ${count} nilai perkembangan untuk kategori ${this.getCategoryLabel()}!`);
-                        this.loadRatings();
-                    } else {
-                        alert("Gagal menyimpan: " + (res?.message || "Unknown error"));
-                    }
-                }).apiCall('saveTK_Checklist', JSON.stringify({
-                    nis: this.selectedNis,
-                    semester: this.semester,
-                    category: this.category,
-                    ratings: ratingsToSave
-                }));
+                localStorage.setItem(`alimam_checklist_${nis}_${sem}`, JSON.stringify(currentList));
+                return { status: true, message: 'Berhasil menyimpan checklist' };
             }
-        }
-    }
 
-        // Original TK_View_Cetak Controller
-        if (typeof tkReportView === 'undefined') {
+            if (action === 'getReportTK') {
+                const nis = String(data.nis || '').trim();
+                const sem = String(data.semester || '1').trim();
+                const student = siswas.find(s => String(s.nis).trim() === nis) || { nama_lengkap: 'Ananda', kelas_id: 'TK' };
+
+                let savedChecklist = [];
+                try {
+                    const storedChk = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
+                    if (storedChk) {
+                        savedChecklist = JSON.parse(storedChk);
+                    } else {
+                        const defaultRatings = ['BSH', 'BSB', 'BSH', 'BSB', 'MB'];
+                        const sClass = student.kelas_id || '';
+                        savedChecklist = allIktp.filter(i => {
+                            const iClass = i.kelas || i.tujuan_pembelajaran || '';
+                            return !iClass || !sClass || sClass.toUpperCase().includes(iClass.toUpperCase());
+                        }).map((item, idx) => {
+                            const isEng = ['ESL English Program', 'Mathematic', 'Science'].includes(item.elemen);
+                            const val = isEng ? (idx % 3 === 0 ? 'E' : (idx % 3 === 1 ? 'G' : 'G')) : defaultRatings[idx % defaultRatings.length];
+                            return {
+                                id_nilai: `${nis}_${sem}_${item.id_iktp}`,
+                                nis: nis,
+                                semester: sem,
+                                category: item.elemen,
+                                id_iktp: item.id_iktp,
+                                nilai: val
+                            };
+                        });
+                    }
+                } catch(e) {}
+
+                let savedNarasi = [];
+                try {
+                    const storedNarasi = localStorage.getItem(`alimam_narasi_${nis}_${sem}`);
+                    if (storedNarasi) {
+                        savedNarasi = JSON.parse(storedNarasi);
+                    } else {
+                        const affirmation = student.parentAffirmation || 'Ananda tumbuh dengan sangat baik, ceria, mandiri, dan aktif mengikuti seluruh kegiatan pembelajaran.';
+                        savedNarasi = [
+                            { elemen: 'Nilai Agama & Budi Pekerti', teks_narasi: `Alhamdulillah, selama semester ${sem} ini Ananda menunjukkan perkembangan yang sangat memuaskan dalam pembiasaan adab Islami, hafalan doa harian, dan melafalkan kalimat thayyibah bersama guru dan teman.`, foto_url: '' },
+                            { elemen: 'Jati Diri', teks_narasi: `Ananda memiliki rasa percaya diri yang baik, mampu berinteraksi positif dengan teman sebaya, serta menunjukkan kemandirian dalam merawat diri dan lingkungan sekitar. ${affirmation}`, foto_url: '' },
+                            { elemen: 'Dasar Literasi & STEAM', teks_narasi: `Ananda aktif dalam kegiatan membaca cerita bergambar, mampu mengekspresikan gagasan melalui karya seni visual, dan memiliki rasa ingin tahu yang tinggi dalam eksplorasi sains sederhana.`, foto_url: '' },
+                            { elemen: 'Kokurikuler / Dimensi Profil Lulusan', teks_narasi: `Ananda senantiasa menunjukkan sikap gotong royong, nalar kritis saat bertanya, serta kedisiplinan dalam mengikuti rutinitas sekolah dengan gembira.`, foto_url: '' },
+                            { elemen: 'Laporan Perkembangan Diniyyah', teks_narasi: `Alhamdulillah, Ananda antusias dalam menghafal surat-surat pendek (Juz 'Amma) dan mempraktikkan gerakan wudhu serta sholat dengan bimbingan ustadzah.`, foto_url: '' },
+                            { elemen: 'ESL English Program', teks_narasi: `Ananda is able to understand simple daily classroom instructions and actively repeats greetings, color names, and numbers in English with confidence.`, foto_url: '' },
+                            { elemen: 'Mathematic', teks_narasi: `Ananda can recognize basic geometric shapes, compare sizes, and count objects sequentially up to 20 with good concentration.`, foto_url: '' },
+                            { elemen: 'Science', teks_narasi: `Ananda shows great curiosity during hands-on science experiments, observing nature and changes of matter with enthusiasm.`, foto_url: '' }
+                        ];
+                    }
+                } catch(e) {}
+
+                return {
+                    status: true,
+                    data: {
+                        observasi: [],
+                        narasi: savedNarasi,
+                        iktp: allIktp,
+                        checklist: savedChecklist
+                    }
+                };
+            }
+
+            if (action === 'saveTK') {
+                const nis = String(data.nis || '').trim();
+                const sem = String(data.semester || '1').trim();
+                const elemen = data.elemen;
+                let currentNarasi = [];
+                try {
+                    const stored = localStorage.getItem(`alimam_narasi_${nis}_${sem}`);
+                    if (stored) currentNarasi = JSON.parse(stored);
+                } catch(e) {}
+                
+                const idx = currentNarasi.findIndex(n => n.elemen === elemen);
+                if (idx >= 0) {
+                    currentNarasi[idx].teks_narasi = data.teks_narasi;
+                    if (data.foto_url !== undefined) currentNarasi[idx].foto_url = data.foto_url;
+                } else {
+                    currentNarasi.push({
+                        elemen: elemen,
+                        teks_narasi: data.teks_narasi,
+                        foto_url: data.foto_url || ''
+                    });
+                }
+                localStorage.setItem(`alimam_narasi_${nis}_${sem}`, JSON.stringify(currentNarasi));
+                return { status: true, message: 'Narasi berhasil disimpan' };
+            }
+
+            if (action === 'uploadFile') {
+                return { status: true, data: { url: data.base64 } };
+            }
+
+            if (action === 'genAI') {
+                const nama = data.nama || 'Ananda';
+                const elemen = data.elemen || 'Perkembangan';
+                return {
+                    status: true,
+                    data: `Alhamdulillah, dalam elemen ${elemen}, Ananda ${nama} menunjukkan capaian yang sangat baik dan berkembang sesuai usianya. Ananda aktif, antusias mengikuti setiap kegiatan terpadu, serta mampu bekerja sama dan mandiri bersama teman-temannya di kelas.`
+                };
+            }
+
+            return { status: true, data: null };
+        }
+
+        // Each withSuccessHandler returns an isolated execution runner with its own callback closure
+        function createGASRunner(successHandler, failureHandler) {
+            return {
+                withSuccessHandler: function(handler) {
+                    return createGASRunner(handler, failureHandler);
+                },
+                withFailureHandler: function(handler) {
+                    return createGASRunner(successHandler, handler);
+                },
+                apiCall: function(action, payloadStr) {
+                    let data = {};
+                    if (payloadStr) {
+                        try {
+                            data = typeof payloadStr === 'string' ? JSON.parse(payloadStr) : payloadStr;
+                        } catch(e) {
+                            data = payloadStr;
+                        }
+                    }
+                    setTimeout(() => {
+                        try {
+                            const res = handleGASApi(action, data);
+                            if (successHandler) successHandler(res);
+                        } catch(err) {
+                            console.error('GAS Api Error:', err);
+                            if (failureHandler) failureHandler(err);
+                        }
+                    }, 10);
+                    return this;
+                }
+            };
+        }
+
+        window.google = window.google || {};
+        window.google.script = window.google.script || {};
+        window.google.script.run = createGASRunner(null, null);
+
+        // TK_View_Checklist Controller with Instant Pre-population of listSiswa
+        function tkChecklistInput() {
+            return {
+                listSiswa: (function() {
+                    try {
+                        const saved = localStorage.getItem('alimam_pgtk_siswas');
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                        }
+                    } catch(e) {}
+                    return (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
+                })(),
+                listIndicators: [],
+                selectedNis: '',
+                semester: '1',
+                category: 'Agama',
+                filterKelas: '',
+                filterGuru: '',
+                ratings: {},
+                loading: false,
+                saving: false,
+
+                defaultTeachers: [
+                    'Bu Nurlaela',
+                    'Ustadzah Nur Hikmah',
+                    'Ustadzah Halizah',
+                    'Ustadzah Muttia Ghina',
+                    'Ustadzah Dian',
+                    'Ustadzah Sahla'
+                ],
+
+                getStudentClass() {
+                    const s = this.listSiswa.find(x => x.nis === this.selectedNis);
+                    return s ? s.kelas_id : '';
+                },
+
+                init() {
+                    if (!this.listSiswa || this.listSiswa.length === 0) {
+                        this.listSiswa = (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
+                    }
+                    this.loadSiswa();
+                    this.loadIndicators();
+                },
+
+                loadSiswa() {
+                    google.script.run.withSuccessHandler(res => {
+                        if (res && res.data && res.data.length > 0) {
+                            this.listSiswa = res.data;
+                        }
+                    }).apiCall('getSiswa');
+                },
+
+                get availableWaliList() {
+                    const names = new Set();
+                    this.listSiswa.forEach(s => {
+                        if (s.wali_kelas) names.add(s.wali_kelas);
+                    });
+                    this.defaultTeachers.forEach(t => names.add(t));
+                    return Array.from(names);
+                },
+
+                getAssignedWali(kelasId) {
+                    const c = (kelasId || '').toUpperCase();
+                    if (c.includes('PLAYGROUP') || c === 'PG') return 'Bu Nurlaela';
+                    if (c === 'TK A') return 'Ustadzah Dian / Sahla';
+                    if (c === 'TK B') return 'Ustadzah Nur Hikmah / Halizah / Muttia';
+                    return '';
+                },
+
+                get listSiswaFiltered() {
+                    return this.listSiswa.filter(s => {
+                        if (this.filterKelas) {
+                            const targetK = this.filterKelas.toUpperCase();
+                            const sK = (s.kelas_id || '').toUpperCase();
+                            if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
+                            if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
+                        }
+
+                        if (this.filterGuru) {
+                            const sWali = s.wali_kelas || this.getAssignedWali(s.kelas_id);
+                            if (!sWali.toLowerCase().includes(this.filterGuru.toLowerCase())) return false;
+                        }
+
+                        return true;
+                    });
+                },
+
+                isEnglishMathScience() {
+                    return ['English', 'Math', 'Science'].includes(this.category);
+                },
+
+                getCategoryLabel() {
+                    const maps = {
+                        'Agama': 'Nilai Agama & Budi Pekerti',
+                        'Jati Diri': 'Jati Diri',
+                        'Literasi & STEAM': 'Dasar Literasi & STEAM',
+                        'Kokurikuler': 'Kokurikuler / Dimensi Profil Lulusan',
+                        'Diniyah': 'Laporan Perkembangan Diniyyah',
+                        'English': 'ESL English Program',
+                        'Math': 'Mathematic',
+                        'Science': 'Science'
+                    };
+                    return maps[this.category] || this.category;
+                },
+
+                loadIndicators() {
+                    if (!this.category) return;
+                    this.loading = true;
+                    this.listIndicators = [];
+                    google.script.run.withSuccessHandler(res => {
+                        this.listIndicators = res?.data || [];
+                        this.loadRatings();
+                    }).apiCall('getIKTP', JSON.stringify({ elemen: this.getCategoryLabel() }));
+                },
+
+                loadRatings() {
+                    if (!this.selectedNis || !this.semester || this.listIndicators.length === 0) {
+                        this.loading = false;
+                        return;
+                    }
+                    this.loading = true;
+                    google.script.run.withSuccessHandler(res => {
+                        this.ratings = {};
+                        this.listIndicators.forEach(item => {
+                            this.ratings[item.id_iktp] = '';
+                        });
+
+                        if (res && res.data) {
+                            res.data.forEach(row => {
+                                if (this.ratings[row.id_iktp] !== undefined) {
+                                    this.ratings[row.id_iktp] = row.nilai;
+                                }
+                            });
+                        }
+                        this.loading = false;
+                    }).apiCall('getTK_Checklist', JSON.stringify({ nis: this.selectedNis, semester: this.semester }));
+                },
+
+                saveRatings() {
+                    if (!this.selectedNis) return alert("Pilih Siswa!");
+                    
+                    const ratingsToSave = {};
+                    let count = 0;
+                    Object.keys(this.ratings).forEach(idIktp => {
+                        if (this.ratings[idIktp]) {
+                            ratingsToSave[idIktp] = this.ratings[idIktp];
+                            count++;
+                        }
+                    });
+
+                    if (count === 0) {
+                        return alert("Mohon berikan setidaknya satu penilaian skala perkembangan sebelum menyimpan.");
+                    }
+
+                    this.saving = true;
+                    google.script.run.withSuccessHandler(res => {
+                        this.saving = false;
+                        if (res && res.status) {
+                            alert(`Berhasil menyimpan ${count} nilai perkembangan untuk kategori ${this.getCategoryLabel()}!`);
+                            this.loadRatings();
+                        } else {
+                            alert("Gagal menyimpan: " + (res?.message || "Unknown error"));
+                        }
+                    }).apiCall('saveTK_Checklist', JSON.stringify({
+                        nis: this.selectedNis,
+                        semester: this.semester,
+                        category: this.category,
+                        ratings: ratingsToSave
+                    }));
+                }
+            };
+        }
+
+        // TK_View_Cetak Controller with Instant Pre-population of listSiswa
         function tkReportView() {
             return {
-                listSiswa: [],
+                listSiswa: (function() {
+                    try {
+                        const saved = localStorage.getItem('alimam_pgtk_siswas');
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                        }
+                    } catch(e) {}
+                    return (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
+                })(),
                 searchNis: '',
                 semester: '1',
                 filterKelas: '',
@@ -2198,12 +2231,23 @@
                 dataRapor: { narasi: [], checklist: [] },
 
                 init() {
+                    if (!this.listSiswa || this.listSiswa.length === 0) {
+                        this.listSiswa = (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
+                    }
+                    if (!this.searchNis && this.listSiswa.length > 0) {
+                        this.searchNis = this.listSiswa[0].nis;
+                    }
                     this.loadSiswa();
                 },
 
                 loadSiswa() {
                     google.script.run.withSuccessHandler(res => {
-                        this.listSiswa = res?.data || [];
+                        if (res && res.data && res.data.length > 0) {
+                            this.listSiswa = res.data;
+                            if (!this.searchNis && this.listSiswa.length > 0) {
+                                this.searchNis = this.listSiswa[0].nis;
+                            }
+                        }
                     }).apiCall('getSiswa');
                 },
 
@@ -2227,23 +2271,20 @@
                     return '-';
                 },
 
-                // Local inputs for narrative editor
                 localNarratives: {},
                 localPhotos: {},
                 aiLoading: {},
 
-                // Google Drive Direct Link Backgrounds (Placeholders)
-                // Ganti 'MASUKKAN_ID_FILE_1_DISINI' dengan ID file gambar Anda dari Google Drive
                 bgImages: [
-                    'https://lh3.googleusercontent.com/d/1aeMhaJhIsROMLVZ-gu09P2FuGlwITGC2', // Gambar 1 (Toys / Mainan)
-                    'https://lh3.googleusercontent.com/d/1MYyq5HOG9ZBVpdfXbb5xQQ-z2ngvHPtd', // Gambar 2 (Bricks / Balok)
-                    'https://lh3.googleusercontent.com/d/1c-K0bZKt4eqQbbrF4d-SEQ91UNUn5hB9', // Gambar 3 (Pencils / Pensil)
+                    'https://lh3.googleusercontent.com/d/1aeMhaJhIsROMLVZ-gu09P2FuGlwITGC2',
+                    'https://lh3.googleusercontent.com/d/1MYyq5HOG9ZBVpdfXbb5xQQ-z2ngvHPtd',
+                    'https://lh3.googleusercontent.com/d/1c-K0bZKt4eqQbbrF4d-SEQ91UNUn5hB9'
                 ],
 
                 getBgStyle(idx) {
                     const bgUrl = this.bgImages[idx % this.bgImages.length];
                     if (bgUrl.includes('MASUKKAN_ID_FILE_')) {
-                        return 'background-color: #ffffff;'; // Fallback ke warna putih jika belum diset
+                        return 'background-color: #ffffff;';
                     }
                     return `background-image: url('${bgUrl}'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;`;
                 },
@@ -2253,19 +2294,22 @@
                     this.loading = true;
                     google.script.run.withSuccessHandler(res => {
                         this.siswa = (res?.data || []).find(s => String(s.nis).trim() === String(this.searchNis).trim());
-                        if (!this.siswa) return (alert("Siswa tidak ditemukan!"), this.loading = false);
+                        if (!this.siswa) {
+                            alert("Siswa tidak ditemukan!");
+                            this.loading = false;
+                            return;
+                        }
 
                         google.script.run.withSuccessHandler(rep => {
-                            this.dataRapor = rep.data;
+                            this.dataRapor = rep.data || { narasi: [], checklist: [] };
 
-                            // Initialize local narratives and photos
                             this.localNarratives = {};
                             this.localPhotos = {};
                             this.aiLoading = {};
 
                             ['Agama', 'Jati Diri', 'Literasi & STEAM', 'Kokurikuler', 'Diniyah', 'English', 'Math', 'Science'].forEach(cat => {
                                 const fullLabel = this.getCategoryFullLabel(cat);
-                                const existing = this.dataRapor.narasi.find(n => n.elemen === fullLabel);
+                                const existing = (this.dataRapor.narasi || []).find(n => n.elemen === fullLabel);
                                 this.localNarratives[cat] = existing ? existing.teks_narasi : 'Alhamdulillah, Ananda menunjukkan perkembangan yang baik pada elemen ini. Selengkapnya akan dibahas saat konsultasi orang tua.';
                                 this.localPhotos[cat] = existing ? existing.foto_url : '';
                                 this.aiLoading[cat] = false;
@@ -2281,7 +2325,6 @@
                     this.aiLoading[cat] = true;
                     const fullLabel = this.getCategoryFullLabel(cat);
 
-                    // Compile indicators and ratings
                     const listIndicators = this.getIndicatorsFor(cat);
                     const listRatings = listIndicators.map(i => ({
                         indikator: i.indikator || i.id_iktp,
@@ -2327,7 +2370,6 @@
 
                 saveNarasi(cat) {
                     google.script.run.withSuccessHandler(res => {
-                        // Success silently
                     }).apiCall('saveTK', JSON.stringify({
                         nis: this.searchNis,
                         semester: this.semester,
@@ -2395,9 +2437,8 @@
                     n = this.dataRapor.narasi.find(i => i.elemen.toLowerCase().includes(firstWord));
                     return n ? n.teks_narasi : null;
                 }
-            }
+            };
         }
-    }
     </script>
 
 </body>
