@@ -34,3 +34,4 @@
 - **Input Observasi Harian & AI Narasi**: Generator narasi capaian belajar anak otomatis.
 - **Checklist Capaian IKTP**: 346 butir indikator dalam 8 elemen kurikulum.
 - **Cetak Rapor Digital (A4)**: Pratinjau dan cetak dokumen resmi berformat standar.
+

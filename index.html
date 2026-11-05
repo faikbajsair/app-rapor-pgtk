@@ -159,6 +159,75 @@
                 page-break-before: always;
             }
         }
+    
+/* Global Page Card Style (Screen & Print) */
+    .page-container {
+        width: 210mm;
+        height: 297mm;
+        padding: 25mm 20mm 38mm 20mm !important; /* Normal A4 margins: 25mm top/left/right, 38mm bottom safety margin */
+        box-sizing: border-box !important;
+        position: relative;
+        background-color: white;
+        overflow: hidden;
+        margin: 0 auto 2rem auto;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .page-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Table styles for dynamic scaling */
+    .normal-table th, .normal-table td {
+        padding: 4px 6px !important;
+        font-size: 8.5px !important;
+        line-height: 1.2 !important;
+    }
+    .normal-table .indicator-title {
+        font-size: 9px !important;
+        font-weight: bold !important;
+        color: #1e293b;
+    }
+
+    .compact-table th, .compact-table td {
+        padding: 2px 4px !important;
+        font-size: 7px !important;
+        line-height: 1.15 !important;
+    }
+    .compact-table .indicator-title {
+        font-size: 7.5px !important;
+        font-weight: bold !important;
+        color: #1e293b;
+    }
+
+    @media print {
+        @page {
+            size: A4;
+            margin: 0; /* Removes default browser header/footer and margins */
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: none;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .print-page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .page-container {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            background-color: white !important;
+        }
+    }
     </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col justify-between" x-data="raporApp()" x-init="initApp()">
@@ -885,142 +954,458 @@
                     </div>
                 </div>
 
-                <!-- 4. CHECKLIST PENILAIAN IKTP (TK_CHK) -->
+                <!-- 4. CHECKLIST PENILAIAN IKTP (8 ELEMEN) - ASLI PG-TK -->
                 <div x-show="view==='tk_chk'" class="space-y-6">
-                    <div class="bento-card p-6 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                            <div>
-                                <h3 class="text-base font-bold text-slate-900">Checklist Penilaian Capaian IKTP (8 Elemen)</h3>
-                                <p class="text-xs text-slate-500">Evaluasi perkembangan indikator per semester (BB, MB, BSH, BSB)</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <select x-model="chkSelectedNis" class="p-2 border rounded-xl text-xs bg-slate-50 font-bold text-slate-800">
-                                    <option value="">-- Pilih Siswa --</option>
-                                    <template x-for="s in listSiswa" :key="s.nis">
-                                        <option :value="s.nis" x-text="s.nama_lengkap + ' (' + s.kelas_id + ')'"></option>
+<!-- TK_View_Checklist.html -->
+<div x-data="tkChecklistInput()" class="space-y-6">
+    <!-- Header Selection Panel -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
+            <h3 class="text-xl font-bold text-indigo-900">Penilaian Checklist Perkembangan PG-TK</h3>
+            
+            <!-- Quick Filter Bar -->
+            <div class="flex items-center gap-2">
+                <select x-model="filterKelas" class="p-2 border border-gray-200 rounded-xl text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                    <option value="">Semua Kelas</option>
+                    <option value="Playgroup">Playgroup</option>
+                    <option value="TK A">TK A</option>
+                    <option value="TK B">TK B</option>
+                </select>
+                <select x-model="filterGuru" class="p-2 border border-gray-200 rounded-xl text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                    <option value="">Semua Guru Wali</option>
+                    <template x-for="g in availableWaliList" :key="g">
+                        <option :value="g" x-text="g"></option>
+                    </template>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Siswa</label>
+                <select x-model="selectedNis" @change="loadRatings()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
+                    <option value="">-- Pilih Siswa (<span x-text="listSiswaFiltered.length"></span> siswa) --</option>
+                    <template x-for="s in listSiswaFiltered" :key="s.nis">
+                        <option :value="s.nis" x-text="s.nama_lengkap + ' — [' + (s.kelas_id || 'TK') + (s.wali_kelas ? ' • ' + s.wali_kelas : '') + ']'"></option>
+                    </template>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Semester</label>
+                <select x-model="semester" @change="loadRatings()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+                    <option value="1">Semester 1 (Satu)</option>
+                    <option value="2">Semester 2 (Dua)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Kategori / Elemen</label>
+                <select x-model="category" @change="loadIndicators()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+                    <option value="Agama">Nilai Agama & Budi Pekerti</option>
+                    <option value="Jati Diri">Jati Diri</option>
+                    <option value="Literasi & STEAM">Dasar Literasi & STEAM</option>
+                    <option value="Kokurikuler">Kokurikuler / Dimensi Profil Lulusan</option>
+                    <option value="Diniyah">Laporan Perkembangan Diniyyah</option>
+                    <option value="English">ESL English Program</option>
+                    <option value="Math">Mathematic</option>
+                    <option value="Science">Science</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Grid / Indicators Panel -->
+    <div x-show="selectedNis && category" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[300px]" x-cloak>
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+            <h4 class="text-lg font-bold text-gray-800" x-text="'Indikator Perkembangan - ' + getCategoryLabel()"></h4>
+            <div class="text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg font-semibold">
+                Skala Penilaian: <span x-text="isEnglishMathScience() ? 'NI, G, E' : 'BB, MB, BSH, BSB'"></span>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div x-show="loading" class="flex flex-col items-center justify-center py-12 space-y-4">
+            <div class="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
+            <p class="text-sm text-gray-500 font-medium">Memuat indikator dan nilai...</p>
+        </div>
+
+        <!-- Table or List of Indicators -->
+        <div x-show="!loading && listIndicators.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-400 space-y-2">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <p class="text-sm font-medium">Belum ada indikator terdaftar untuk kategori ini di sheet TK_Master_IKTP.</p>
+        </div>
+
+        <div x-show="!loading && listIndicators.length > 0" class="space-y-4">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b border-gray-200">
+                            <th class="p-4 w-12">No</th>
+                            <th class="p-4">Tujuan Pembelajaran / Indikator</th>
+                            <th class="p-4 w-[320px] text-center">Skala Penilaian</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <template x-for="(item, index) in (listIndicators || []).filter(i => {
+                            const sClass = getStudentClass();
+                            if (!sClass) return true;
+                            const itemKelas = i.kelas || i.tujuan_pembelajaran || '';
+                            return !itemKelas || itemKelas.trim() === '' || sClass.toUpperCase().includes(itemKelas.toUpperCase());
+                        })" :key="item.id_iktp">
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="p-4 font-semibold text-gray-400" x-text="index + 1"></td>
+                                <td class="p-4">
+                                    <div class="font-bold text-gray-800 text-sm" x-text="item.indikator || item.id_iktp"></div>
+                                    <div class="text-xs text-gray-400 mt-1" x-text="item.tujuan_pembelajaran || ''"></div>
+                                </td>
+                                <td class="p-4">
+                                    <!-- 4 Scales (BB, MB, BSH, BSB) -->
+                                    <template x-if="!isEnglishMathScience()">
+                                        <div class="flex items-center justify-between bg-gray-50 p-1.5 rounded-xl border border-gray-200 text-xs font-bold w-full">
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'BB' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="BB" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>BB</span>
+                                            </label>
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'MB' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="MB" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>MB</span>
+                                            </label>
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'BSH' ? 'bg-green-400 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="BSH" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>BSH</span>
+                                            </label>
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'BSB' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="BSB" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>BSB</span>
+                                            </label>
+                                        </div>
                                     </template>
-                                </select>
-                            </div>
+
+                                    <!-- 3 Scales (NI, G, E) for subjects -->
+                                    <template x-if="isEnglishMathScience()">
+                                        <div class="flex items-center justify-between bg-gray-50 p-1.5 rounded-xl border border-gray-200 text-xs font-bold w-full">
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'NI' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="NI" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>NI</span>
+                                            </label>
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'G' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="G" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>G</span>
+                                            </label>
+                                            <label class="flex-1 flex flex-col items-center justify-center p-1.5 rounded-lg cursor-pointer transition-all select-none"
+                                                :class="ratings[item.id_iktp] === 'E' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'">
+                                                <input type="radio" :name="item.id_iktp" value="E" x-model="ratings[item.id_iktp]" class="hidden">
+                                                <span>E</span>
+                                            </label>
+                                        </div>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <div x-show="!loading && listIndicators.length === 0" class="p-8 text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <p class="text-sm font-medium">Belum ada indikator terdaftar untuk kategori ini di sheet TK_Master_IKTP.</p>
+                </div>
+            </div>
+
+            <!-- Bottom Action -->
+            <div x-show="listIndicators.length > 0" class="mt-6 flex justify-end no-print">
+                <button @click="saveRatings" :disabled="saving"
+                    class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2">
+                    <span x-show="!saving">Simpan Penilaian</span>
+                    <svg x-show="saving" class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+                </div>
+
+                <!-- 5. CETAK RAPOR PG-TK (A4) - ASLI MULTI-PAGE & KOP RESMI -->
+                <div x-show="view==='tk_out'" class="space-y-6">
+<div x-data="tkReportView()">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 no-print space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
+            <h2 class="text-xl font-bold text-gray-800">Cetak Rapor PG-TK</h2>
+            <div class="flex items-center gap-2">
+                <select x-model="filterKelas" class="p-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                    <option value="">Semua Kelas</option>
+                    <option value="Playgroup">Playgroup</option>
+                    <option value="TK A">TK A</option>
+                    <option value="TK B">TK B</option>
+                </select>
+                <select x-model="semester" class="p-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div class="md:col-span-6">
+                <label class="block text-xs font-bold text-gray-600 mb-1">Pilih Siswa</label>
+                <select x-model="searchNis" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
+                    <option value="">-- Pilih Siswa (<span x-text="listSiswaFiltered.length"></span> siswa) --</option>
+                    <template x-for="s in listSiswaFiltered" :key="s.nis">
+                        <option :value="s.nis" x-text="s.nama_lengkap + ' — [' + (s.kelas_id || 'TK') + (s.wali_kelas ? ' • ' + s.wali_kelas : '') + ']'"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-bold text-gray-600 mb-1">Atau Masukkan NIS</label>
+                <input type="text" x-model="searchNis" placeholder="Contoh: 24001"
+                    class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs">
+            </div>
+            <div class="md:col-span-3 flex items-end gap-2">
+                <button @click="generatePreview" :disabled="loading"
+                    class="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5">
+                    <span x-show="!loading">Preview Rapor</span>
+                    <span x-show="loading" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                </button>
+                <button @click="window.print()" x-show="reportReady"
+                    class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow-sm">
+                    🖨️ Cetak
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area Kertas Rapor TK (Wrapper Preview) -->
+    <div x-show="reportReady" class="mx-auto" style="width: 210mm; color: black;">
+        <template
+            x-for="(cat, idx) in ['Agama', 'Jati Diri', 'Literasi & STEAM', 'Kokurikuler', 'Diniyah', 'English', 'Math', 'Science']"
+            :key="cat">
+            <div :class="idx > 0 ? 'print-page-break' : ''">
+                <!-- A4 Page Card -->
+                <div :style="getBgStyle(idx)"
+                    class="page-container"
+                    style="color: black;">
+
+                <!-- Halaman Pertama: KOP & Identitas Lengkap -->
+                <template x-if="idx === 0">
+                    <div>
+                        <!-- KOP -->
+                        <div class="text-center mb-6 border-b-4 border-double border-indigo-900 pb-2">
+                            <h1 class="text-xl font-extrabold uppercase tracking-tight text-indigo-900">Laporan Capaian
+                                Pembelajaran</h1>
+                            <h2 class="text-sm font-bold text-gray-700">PG-TK AL-IMAM ISLAMIC SCHOOL</h2>
+                            <p class="text-[9px] italic text-gray-400">Membentuk Generasi Qur'ani, Cerdas, dan Beradab
+                            </p>
                         </div>
 
-                        <!-- Table IKTP -->
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left text-xs border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
-                                        <th class="p-3 w-16">Kode</th>
-                                        <th class="p-3">Elemen & Indikator Capaian</th>
-                                        <th class="p-3 w-40 text-center">Penilaian</th>
+                        <!-- Identitas -->
+                        <div
+                            class="grid grid-cols-2 gap-4 mb-6 text-[10px] bg-indigo-50/30 p-3 rounded-xl border border-indigo-100">
+                            <div class="space-y-1">
+                                <p><span class="inline-block w-24 font-bold">Nama Ananda</span>: <strong
+                                        x-text="siswa.nama_lengkap"></strong></p>
+                                <p><span class="inline-block w-24 font-bold">Kelas</span>: <strong
+                                        x-text="siswa.kelas_id || '-'"></strong></p>
+                                <p><span class="inline-block w-24 font-bold">Guru Wali Kelas</span>: <span
+                                        x-text="siswa.wali_kelas || getAssignedWali(siswa.kelas_id)"></span></p>
+                            </div>
+                            <div class="space-y-1">
+                                <p><span class="inline-block w-24 font-bold">Fase</span>: Fondasi</p>
+                                <p><span class="inline-block w-24 font-bold">Semester</span>: <span
+                                        x-text="semester"></span></p>
+                                <p><span class="inline-block w-24 font-bold">Tahun Ajaran</span>: 2024/2025</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Halaman Kedua dst: Identitas Ringkas di Atas -->
+                <template x-if="idx > 0">
+                    <div
+                        class="flex justify-between items-center text-[8px] text-gray-500 border-b border-gray-200 pb-1 mb-4">
+                        <div><span class="font-bold">Laporan Capaian Pembelajaran PG-TK</span></div>
+                        <div>Nama: <strong x-text="siswa.nama_lengkap"></strong> | Kelas: <span
+                                x-text="siswa.kelas_id"></span></div>
+                        <div>Semester: <span x-text="semester"></span> | TA: 2024/2025</div>
+                    </div>
+                </template>
+
+                <!-- Judul Kategori / Elemen -->
+                <h3 class="bg-indigo-900 p-2.5 font-bold text-white text-[10px] mb-4 rounded-lg tracking-wide uppercase"
+                    x-text="getCategoryTitle(cat)"></h3>
+
+                <!-- Table Checklist -->
+                <div class="mb-4 overflow-x-auto">
+                    <!-- General Scale Table (BB, MB, BSH, BSB) -->
+                    <template x-if="!isEnglishScale(cat)">
+                        <table class="w-full border-collapse border border-gray-300 bg-white"
+                               :class="getIndicatorsFor(cat).length > 12 ? 'compact-table' : 'normal-table'">
+                            <thead>
+                                <tr class="bg-gray-50 text-center font-bold text-gray-700">
+                                    <th class="border border-gray-300 w-8">No</th>
+                                    <th class="border border-gray-300 text-left">Indikator / Tujuan Pembelajaran</th>
+                                    <th class="border border-gray-300 w-10">BB</th>
+                                    <th class="border border-gray-300 w-10">MB</th>
+                                    <th class="border border-gray-300 w-10">BSH</th>
+                                    <th class="border border-gray-300 w-10">BSB</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, itemIdx) in getIndicatorsFor(cat)" :key="item.id_iktp">
+                                    <tr class="hover:bg-gray-50/30">
+                                        <td class="border border-gray-300 text-center font-semibold text-gray-500"
+                                            x-text="itemIdx + 1"></td>
+                                        <td class="border border-gray-300 text-gray-800">
+                                            <div class="indicator-title" x-text="item.indikator || item.id_iktp"></div>
+                                            <template x-if="item.tujuan_pembelajaran && item.tujuan_pembelajaran.trim() !== ''">
+                                                <div class="text-[6.5px] text-gray-400 mt-0.5 leading-tight" x-text="item.tujuan_pembelajaran"></div>
+                                            </template>
+                                        </td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-red-600"
+                                            x-text="getRating(item.id_iktp) === 'BB' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-amber-500"
+                                            x-text="getRating(item.id_iktp) === 'MB' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-green-500"
+                                            x-text="getRating(item.id_iktp) === 'BSH' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-green-700"
+                                            x-text="getRating(item.id_iktp) === 'BSB' ? '✓' : ''"></td>
                                     </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <template x-for="(item, idx) in listIktp.slice(0, 15)" :key="item.id_iktp || idx">
-                                        <tr class="hover:bg-slate-50/80">
-                                            <td class="p-3 font-mono text-[10px] font-bold text-slate-400" x-text="item.id_iktp || ('IKTP_' + (idx+1))"></td>
-                                            <td class="p-3">
-                                                <div class="font-bold text-slate-900" x-text="item.indikator"></div>
-                                                <div class="text-[10px] text-emerald-700 font-semibold" x-text="item.elemen"></div>
-                                            </td>
-                                            <td class="p-3 text-center">
-                                                <select class="p-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-white">
-                                                    <option value="BSH">BSH (Sesuai Harapan)</option>
-                                                    <option value="BSB">BSB (Sangat Baik)</option>
-                                                    <option value="MB">MB (Mulai Berkembang)</option>
-                                                    <option value="BB">BB (Belum Berkembang)</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
+                                </template>
+                                <template x-if="getIndicatorsFor(cat).length === 0">
+                                    <tr>
+                                        <td colspan="6"
+                                            class="border border-gray-300 p-3 text-center text-gray-400 italic">Belum
+                                            ada indikator checklist yang terisi.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
 
-                        <div class="flex justify-end pt-3">
-                            <button @click="showToast('✓ Penilaian checklist IKTP berhasil disimpan.')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md">
-                                Simpan Penilaian Checklist
-                            </button>
+                    <!-- English/Math/Science Scale Table (NI, G, E) -->
+                    <template x-if="isEnglishScale(cat)">
+                        <table class="w-full border-collapse border border-gray-300 bg-white"
+                               :class="getIndicatorsFor(cat).length > 12 ? 'compact-table' : 'normal-table'">
+                            <thead>
+                                <tr class="bg-gray-50 text-center font-bold text-gray-700">
+                                    <th class="border border-gray-300 w-8">No</th>
+                                    <th class="border border-gray-300 text-left">Skills</th>
+                                    <th class="border border-gray-300 w-24">Need Improvement</th>
+                                    <th class="border border-gray-300 w-20">Good</th>
+                                    <th class="border border-gray-300 w-20">Excellent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, itemIdx) in getIndicatorsFor(cat)" :key="item.id_iktp">
+                                    <tr class="hover:bg-gray-50/30">
+                                        <td class="border border-gray-300 text-center font-semibold text-gray-500"
+                                            x-text="itemIdx + 1"></td>
+                                        <td class="border border-gray-300 text-gray-800">
+                                            <div class="indicator-title" x-text="item.indikator || item.id_iktp"></div>
+                                            <template x-if="item.tujuan_pembelajaran && item.tujuan_pembelajaran.trim() !== ''">
+                                                <div class="text-[6.5px] text-gray-400 mt-0.5 leading-tight" x-text="item.tujuan_pembelajaran"></div>
+                                            </template>
+                                        </td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-orange-600"
+                                            x-text="getRating(item.id_iktp) === 'NI' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-blue-600"
+                                            x-text="getRating(item.id_iktp) === 'G' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-green-600"
+                                            x-text="getRating(item.id_iktp) === 'E' ? '✓' : ''"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="getIndicatorsFor(cat).length === 0">
+                                    <tr>
+                                        <td colspan="5"
+                                            class="border border-gray-300 p-3 text-center text-gray-400 italic">Belum
+                                            ada indikator checklist yang terisi.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                </div>
+
+                <!-- Narasi / Deskripsi Box (Solid bg-white to block watermark behind text) -->
+                <div class="flex flex-col gap-3 mt-4 border border-gray-200 p-4 rounded-xl bg-white shadow-sm">
+                    <div class="flex gap-6 items-start">
+                        <div class="flex-1">
+                            <div class="text-[10px] font-bold text-gray-800 mb-1">DESKRIPSI RAPOR / NARRATIVE:</div>
+                            <div class="text-[10px] leading-relaxed text-justify italic text-gray-600 font-medium whitespace-pre-wrap font-sans"
+                                x-text="localNarratives[cat]">
+                            </div>
+                        </div>
+                        <div
+                            class="w-40 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-300 flex-shrink-0">
+                            <template x-if="localPhotos[cat]">
+                                <img :src="localPhotos[cat]" class="w-full h-full object-cover">
+                            </template>
+                            <template x-if="!localPhotos[cat]">
+                                <div class="text-[9px] text-gray-400 select-none">[ Foto Kegiatan ]</div>
+                            </template>
                         </div>
                     </div>
                 </div>
 
-                <!-- 5. CETAK RAPOR DIGITAL (TK_OUT) -->
-                <div x-show="view==='tk_out'" class="space-y-6">
-                    <div class="bento-card p-5 no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h3 class="text-base font-bold text-slate-900">Format Cetak Rapor Digital A4</h3>
-                            <p class="text-xs text-slate-500">Pilih siswa untuk melihat pratinjau lembar rapor resmi</p>
+                <!-- TTD (Hanya Ditampilkan di Halaman Terakhir / Science) -->
+                <template x-if="idx === 7">
+                    <div class="flex justify-between mt-12 text-xs text-center border-t border-gray-200 pt-6">
+                        <div class="w-1/3">
+                            <p>Mengetahui,<br>Orang Tua/Wali</p><br><br><br>
+                            <p class="font-bold underline">( ....................... )</p>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <select x-model="cetakSelectedNis" class="p-2 border rounded-xl text-xs bg-slate-50 font-bold text-slate-800">
-                                <template x-for="s in listSiswa" :key="s.nis">
-                                    <option :value="s.nis" x-text="s.nama_lengkap + ' (' + s.kelas_id + ')'"></option>
-                                </template>
-                            </select>
-                            <button @click="window.print()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md">
-                                <i data-lucide="printer" class="w-4 h-4"></i> Cetak Dokumen (PDF)
-                            </button>
+                        <div class="w-1/3">
+                            <p>Bogor, <span
+                                    x-text="new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})"></span><br>Guru
+                                Kelas</p><br><br><br>
+                            <p class="font-bold underline">Ustadz/ah .................</p>
                         </div>
                     </div>
+                </template>
+            </div>
 
-                    <!-- Halaman Cetak Resmi A4 -->
-                    <div class="bg-white p-8 sm:p-12 rounded-3xl border border-slate-200 shadow-xl max-w-4xl mx-auto space-y-6 text-slate-900">
-                        <div class="text-center border-b-2 border-emerald-700 pb-4">
-                            <h2 class="text-xl sm:text-2xl font-black text-emerald-900 tracking-tight">TK & PLAYGROUP AL-IMAM ISLAMIC SCHOOL</h2>
-                            <p class="text-xs font-semibold text-slate-600">LAPORAN CAPAIAN PERKEMBANGAN PESERTA DIDIK (RAPOR RESMI)</p>
-                            <p class="text-[10px] text-slate-400 font-mono">Tahun Ajaran 2026/2027 • Kurikulum Merdeka Terpadu</p>
-                        </div>
+            <!-- Edit Control Box (Hidden in Print, Outside of A4 Page Card) -->
+            <div class="p-4 bg-white border border-gray-200 rounded-xl shadow-sm no-print max-w-[210mm] mx-auto mb-12 mt-2 flex flex-col gap-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-indigo-900 uppercase tracking-wide">Edit Narasi & Foto (<span x-text="cat"></span>)</span>
+                    <button @click="generateAINarrative(cat)" :disabled="aiLoading[cat]"
+                        class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 shadow-sm">
+                        <span x-show="!aiLoading[cat]">✨ Generate AI Narrative</span>
+                        <span x-show="aiLoading[cat]" class="animate-pulse">Menyusun Narasi...</span>
+                    </button>
+                </div>
 
-                        <table class="w-full text-xs" x-data="{ curSiswa() { return listSiswa.find(s => s.nis === cetakSelectedNis) || listSiswa[0] } }">
-                            <tr>
-                                <td class="font-bold w-32 py-1">Nama Peserta Didik</td>
-                                <td>: <strong class="text-sm" x-text="curSiswa()?.nama_lengkap"></strong></td>
-                                <td class="font-bold w-24 py-1">Kelas / Unit</td>
-                                <td>: <span x-text="curSiswa()?.kelas_id"></span></td>
-                            </tr>
-                            <tr>
-                                <td class="font-bold py-1">NIS / NISN</td>
-                                <td>: <span x-text="(curSiswa()?.nis || '') + ' / ' + (curSiswa()?.nisn || '')"></span></td>
-                                <td class="font-bold py-1">Wali Kelas</td>
-                                <td>: <span x-text="curSiswa()?.wali_kelas"></span></td>
-                            </tr>
-                        </table>
+                <textarea x-model="localNarratives[cat]" @change="saveNarasi(cat)"
+                    class="w-full p-2.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50/50"
+                    rows="3" placeholder="Tulis deskripsi perkembangan di sini..."></textarea>
 
-                        <div class="space-y-4 pt-4 border-t border-slate-200 text-xs">
-                            <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
-                                <h4 class="font-bold text-emerald-950 mb-1">Ringkasan Narasi Observasi Tumbuh Kembang:</h4>
-                                <p class="text-slate-700 leading-relaxed italic" x-text="selectedPsikoStudent?.parentAffirmation || 'Ananda tumbuh dengan sangat baik, ceria, mandiri, dan aktif mengikuti seluruh kegiatan pembelajaran.'"></p>
-                            </div>
-
-                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                <h4 class="font-bold text-slate-900 mb-1">Catatan Perkembangan Adab & Diniyah:</h4>
-                                <p class="text-slate-700 leading-relaxed">
-                                    Alhamdulillah Ananda telah mampu melafalkan doa-doa harian, mengenal huruf hijaiyah dengan ceria, serta terbiasa mengucapkan kalimat thayyibah bersama Ustadzah dan teman-temannya.
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Tanda Tangan Resmi -->
-                        <div class="flex justify-between text-xs pt-10 text-center">
-                            <div>
-                                <div>Mengetahui,</div>
-                                <div class="font-bold">Orang Tua / Wali Murid</div>
-                                <div class="h-16"></div>
-                                <div class="font-bold underline">( ........................................ )</div>
-                            </div>
-                            <div>
-                                <div>Bogor, 2026</div>
-                                <div class="font-bold">Wali Kelas</div>
-                                <div class="h-16"></div>
-                                <div class="font-bold underline" x-text="listSiswa.find(s=>s.nis===cetakSelectedNis)?.wali_kelas || 'Wali Kelas'"></div>
-                            </div>
-                            <div>
-                                <div>Mengetahui,</div>
-                                <div class="font-bold">Kepala Sekolah PG-TK</div>
-                                <div class="h-16"></div>
-                                <div class="font-bold underline">Ustadzah Nurlaela, S.Pd</div>
-                            </div>
-                        </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-500 font-bold mb-1">Unggah Foto Kegiatan:</label>
+                        <input type="file" @change="uploadPhoto($event, cat)" accept="image/*"
+                            class="w-full text-xs text-gray-500 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                     </div>
+                    <div class="flex-shrink-0" x-show="localPhotos[cat]">
+                        <button @click="localPhotos[cat] = ''; saveNarasi(cat);"
+                            class="bg-rose-50 text-rose-600 text-xs px-2.5 py-1 rounded-md font-bold hover:bg-rose-100 transition-colors border border-rose-100">
+                            Hapus Foto
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </div> <!-- Closes wrapper div -->
+        </template>
+    </div>
+</div>
                 </div>
 
                 <!-- 6. MANAJEMEN SISWA (AD_SISWA) -->
@@ -1413,5 +1798,607 @@
             setTimeout(() => div.remove(), 3200);
         }
     </script>
+
+    <!-- GOOGLE APPS SCRIPT CLIENT-SIDE POLYFILL (STANDALONE VERCEL ADAPTER) -->
+    <script>
+        const ADDITIONAL_IKTP = [{"id_iktp":"IKTP_DINIYAH_01","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mampu melafalkan doa sebelum dan sesudah makan dengan tertib dan benar"},{"id_iktp":"IKTP_DINIYAH_02","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mampu melafalkan doa sebelum dan bangun tidur dengan bimbingan"},{"id_iktp":"IKTP_DINIYAH_03","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mampu melafalkan doa masuk dan keluar kamar mandi serta membiasakan adabnya"},{"id_iktp":"IKTP_DINIYAH_04","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mengenal dan melafalkan kalimat thayyibah (Basmalah, Hamdalah, Tasbih, Takbir)"},{"id_iktp":"IKTP_DINIYAH_05","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Hafalan Surat Al-Fatihah, An-Nas, Al-Falaq, dan Al-Ikhlas"},{"id_iktp":"IKTP_DINIYAH_06","elemen":"Laporan Perkembangan Diniyyah","kelas":"TK A","indikator":"Hafalan Surat Al-Lahab, An-Nashr, dan Al-Kafirun"},{"id_iktp":"IKTP_DINIYAH_07","elemen":"Laporan Perkembangan Diniyyah","kelas":"TK B","indikator":"Hafalan Surat Al-Kautsar, Al-Ma'un, dan Quraisy"},{"id_iktp":"IKTP_DINIYAH_08","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mampu mempraktikkan gerakan berwudhu dengan urutan yang benar"},{"id_iktp":"IKTP_DINIYAH_09","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mampu mempraktikkan gerakan sholat fardhu secara tertib bersama teman"},{"id_iktp":"IKTP_DINIYAH_10","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Mengenal huruf Hijaiyah tunggal dan melafalkannya sesuai makhraj sederhana"},{"id_iktp":"IKTP_DINIYAH_11","elemen":"Laporan Perkembangan Diniyyah","kelas":"","indikator":"Menunjukkan adab Islami: makan dan minum dengan tangan kanan sambil duduk"},{"id_iktp":"IKTP_ENG_01","elemen":"ESL English Program","kelas":"","indikator":"Listening: Responds appropriately to daily classroom greetings (Good morning, Hello)"},{"id_iktp":"IKTP_ENG_02","elemen":"ESL English Program","kelas":"","indikator":"Listening: Follows simple classroom commands (Sit down, Stand up, Line up, Listen)"},{"id_iktp":"IKTP_ENG_03","elemen":"ESL English Program","kelas":"","indikator":"Speaking: Verbally expresses basic courtesies (Thank you, Please, Excuse me)"},{"id_iktp":"IKTP_ENG_04","elemen":"ESL English Program","kelas":"","indikator":"Speaking: Able to state own name and feelings (I am happy / hungry / thirsty)"},{"id_iktp":"IKTP_ENG_05","elemen":"ESL English Program","kelas":"","indikator":"Vocabulary: Recognizes and names basic primary and secondary colors in English"},{"id_iktp":"IKTP_ENG_06","elemen":"ESL English Program","kelas":"","indikator":"Vocabulary: Names common animals, fruits, and classroom objects"},{"id_iktp":"IKTP_ENG_07","elemen":"ESL English Program","kelas":"TK A","indikator":"Phonics: Recognizes initial letter sounds from A to M"},{"id_iktp":"IKTP_ENG_08","elemen":"ESL English Program","kelas":"TK B","indikator":"Phonics: Recognizes initial letter sounds from N to Z and blends simple CVC words"},{"id_iktp":"IKTP_ENG_09","elemen":"ESL English Program","kelas":"","indikator":"Counting: Counts numbers 1 to 20 aloud in English sequentially"},{"id_iktp":"IKTP_ENG_10","elemen":"ESL English Program","kelas":"","indikator":"Singing: Actively participates in English nursery rhymes and action songs"},{"id_iktp":"IKTP_MATH_01","elemen":"Mathematic","kelas":"","indikator":"Recognizing number symbols and counting concrete objects 1 to 10"},{"id_iktp":"IKTP_MATH_02","elemen":"Mathematic","kelas":"TK B","indikator":"Recognizing number symbols and counting concrete objects 11 to 20"},{"id_iktp":"IKTP_MATH_03","elemen":"Mathematic","kelas":"","indikator":"Identifying basic geometric 2D shapes (Circle, Square, Triangle, Rectangle)"},{"id_iktp":"IKTP_MATH_04","elemen":"Mathematic","kelas":"","indikator":"Comparing objects by size (Big - Small, Long - Short, Tall - Short)"},{"id_iktp":"IKTP_MATH_05","elemen":"Mathematic","kelas":"","indikator":"Comparing objects by weight and capacity (Heavy - Light, Full - Empty)"},{"id_iktp":"IKTP_MATH_06","elemen":"Mathematic","kelas":"","indikator":"Sorting and grouping items by color, size, and type"},{"id_iktp":"IKTP_MATH_07","elemen":"Mathematic","kelas":"","indikator":"Understanding and completing simple repeating patterns (AB, AABB, ABC)"},{"id_iktp":"IKTP_MATH_08","elemen":"Mathematic","kelas":"TK B","indikator":"Basic concept of addition and subtraction using concrete objects"},{"id_iktp":"IKTP_MATH_09","elemen":"Mathematic","kelas":"","indikator":"Spatial awareness: Understanding positions (In, On, Under, Beside, In front, Behind)"},{"id_iktp":"IKTP_SCI_01","elemen":"Science","kelas":"","indikator":"Sensory exploration: Distinguishing tastes, smells, textures, and sounds"},{"id_iktp":"IKTP_SCI_02","elemen":"Science","kelas":"","indikator":"Identifying parts of human body and describing their functions"},{"id_iktp":"IKTP_SCI_03","elemen":"Science","kelas":"","indikator":"Differentiating living things (plants, animals, people) and non-living objects"},{"id_iktp":"IKTP_SCI_04","elemen":"Science","kelas":"","indikator":"Observing plant growth and understanding needs of plants (water, sunlight, soil)"},{"id_iktp":"IKTP_SCI_05","elemen":"Science","kelas":"","indikator":"Hands-on water exploration: floating vs sinking, mixing colors, water flow"},{"id_iktp":"IKTP_SCI_06","elemen":"Science","kelas":"","indikator":"Observing weather phenomena (Sunny, Rainy, Cloudy, Windy) and daily changes"},{"id_iktp":"IKTP_SCI_07","elemen":"Science","kelas":"","indikator":"Exploring magnet attraction, shadows, and reflection of light"},{"id_iktp":"IKTP_SCI_08","elemen":"Science","kelas":"","indikator":"Demonstrating curiosity by asking 'why' and 'how' during classroom experiments"},{"id_iktp":"IKTP_SCI_09","elemen":"Science","kelas":"","indikator":"Caring for living creatures and environment through green habits"}];
+        if (typeof SEED_IKTP !== 'undefined') {
+            ADDITIONAL_IKTP.forEach(item => {
+                if (!SEED_IKTP.find(i => i.id_iktp === item.id_iktp)) {
+                    SEED_IKTP.push(item);
+                }
+            });
+        }
+
+        window.google = window.google || {};
+        window.google.script = window.google.script || {};
+        window.google.script.run = {
+            _successHandler: null,
+            _failureHandler: null,
+            withSuccessHandler: function(handler) {
+                this._successHandler = handler;
+                return this;
+            },
+            withFailureHandler: function(handler) {
+                this._failureHandler = handler;
+                return this;
+            },
+            apiCall: function(action, payloadStr) {
+                let data = {};
+                if (payloadStr) {
+                    try {
+                        data = typeof payloadStr === 'string' ? JSON.parse(payloadStr) : payloadStr;
+                    } catch(e) {
+                        data = payloadStr;
+                    }
+                }
+                
+                setTimeout(() => {
+                    let result = { status: true, data: null };
+                    try {
+                        if (action === 'getSiswa') {
+                            let siswas = typeof SEED_SISWAS !== 'undefined' ? SEED_SISWAS : [];
+                            try {
+                                const saved = localStorage.getItem('alimam_pgtk_siswas');
+                                if (saved) siswas = JSON.parse(saved);
+                            } catch(e) {}
+                            result = { status: true, data: siswas };
+                        } else if (action === 'getIKTP') {
+                            const targetElemen = (data && data.elemen) ? String(data.elemen).trim().toLowerCase() : '';
+                            const allIktp = typeof SEED_IKTP !== 'undefined' ? SEED_IKTP : [];
+                            const filtered = targetElemen ? allIktp.filter(i => String(i.elemen).trim().toLowerCase() === targetElemen) : allIktp;
+                            result = { status: true, data: filtered };
+                        } else if (action === 'getTK_Checklist') {
+                            const nis = String(data.nis || '').trim();
+                            const sem = String(data.semester || '1').trim();
+                            let savedChecklist = [];
+                            try {
+                                const stored = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
+                                if (stored) {
+                                    savedChecklist = JSON.parse(stored);
+                                } else {
+                                    // Generate default checklist ratings for initial view
+                                    const allIktp = typeof SEED_IKTP !== 'undefined' ? SEED_IKTP : [];
+                                    const siswas = typeof SEED_SISWAS !== 'undefined' ? SEED_SISWAS : [];
+                                    const student = siswas.find(s => String(s.nis).trim() === nis);
+                                    const sClass = student ? (student.kelas_id || '') : '';
+                                    const defaultRatings = ['BSH', 'BSB', 'BSH', 'BSB', 'MB'];
+                                    
+                                    savedChecklist = allIktp.filter(i => {
+                                        const iClass = i.kelas || i.tujuan_pembelajaran || '';
+                                        return !iClass || !sClass || sClass.toUpperCase().includes(iClass.toUpperCase());
+                                    }).map((item, idx) => {
+                                        const isEng = ['ESL English Program', 'Mathematic', 'Science'].includes(item.elemen);
+                                        const val = isEng ? (idx % 3 === 0 ? 'E' : (idx % 3 === 1 ? 'G' : 'G')) : defaultRatings[idx % defaultRatings.length];
+                                        return {
+                                            id_nilai: `${nis}_${sem}_${item.id_iktp}`,
+                                            nis: nis,
+                                            semester: sem,
+                                            category: item.elemen,
+                                            id_iktp: item.id_iktp,
+                                            nilai: val
+                                        };
+                                    });
+                                }
+                            } catch(e) {}
+                            result = { status: true, data: savedChecklist };
+                        } else if (action === 'saveTK_Checklist') {
+                            const nis = String(data.nis || '').trim();
+                            const sem = String(data.semester || '1').trim();
+                            const category = data.category;
+                            const ratings = data.ratings || {};
+                            
+                            let currentList = [];
+                            try {
+                                const stored = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
+                                if (stored) currentList = JSON.parse(stored);
+                            } catch(e) {}
+
+                            Object.keys(ratings).forEach(idIktp => {
+                                const val = ratings[idIktp];
+                                const existingIdx = currentList.findIndex(item => item.id_iktp === idIktp);
+                                if (existingIdx >= 0) {
+                                    currentList[existingIdx].nilai = val;
+                                } else {
+                                    currentList.push({
+                                        id_nilai: `${nis}_${sem}_${idIktp}`,
+                                        nis: nis,
+                                        semester: sem,
+                                        category: category,
+                                        id_iktp: idIktp,
+                                        nilai: val
+                                    });
+                                }
+                            });
+                            localStorage.setItem(`alimam_checklist_${nis}_${sem}`, JSON.stringify(currentList));
+                            result = { status: true, message: 'Berhasil menyimpan checklist' };
+                        } else if (action === 'getReportTK') {
+                            const nis = String(data.nis || '').trim();
+                            const sem = String(data.semester || '1').trim();
+                            const allIktp = typeof SEED_IKTP !== 'undefined' ? SEED_IKTP : [];
+                            const siswas = typeof SEED_SISWAS !== 'undefined' ? SEED_SISWAS : [];
+                            const student = siswas.find(s => String(s.nis).trim() === nis) || { nama_lengkap: 'Ananda', kelas_id: 'TK' };
+
+                            let savedChecklist = [];
+                            try {
+                                const storedChk = localStorage.getItem(`alimam_checklist_${nis}_${sem}`);
+                                if (storedChk) {
+                                    savedChecklist = JSON.parse(storedChk);
+                                } else {
+                                    const defaultRatings = ['BSH', 'BSB', 'BSH', 'BSB', 'MB'];
+                                    const sClass = student.kelas_id || '';
+                                    savedChecklist = allIktp.filter(i => {
+                                        const iClass = i.kelas || i.tujuan_pembelajaran || '';
+                                        return !iClass || !sClass || sClass.toUpperCase().includes(iClass.toUpperCase());
+                                    }).map((item, idx) => {
+                                        const isEng = ['ESL English Program', 'Mathematic', 'Science'].includes(item.elemen);
+                                        const val = isEng ? (idx % 3 === 0 ? 'E' : (idx % 3 === 1 ? 'G' : 'G')) : defaultRatings[idx % defaultRatings.length];
+                                        return {
+                                            id_nilai: `${nis}_${sem}_${item.id_iktp}`,
+                                            nis: nis,
+                                            semester: sem,
+                                            category: item.elemen,
+                                            id_iktp: item.id_iktp,
+                                            nilai: val
+                                        };
+                                    });
+                                }
+                            } catch(e) {}
+
+                            let savedNarasi = [];
+                            try {
+                                const storedNarasi = localStorage.getItem(`alimam_narasi_${nis}_${sem}`);
+                                if (storedNarasi) {
+                                    savedNarasi = JSON.parse(storedNarasi);
+                                } else {
+                                    const affirmation = student.parentAffirmation || 'Ananda tumbuh dengan sangat baik, ceria, mandiri, dan aktif mengikuti seluruh kegiatan pembelajaran.';
+                                    savedNarasi = [
+                                        { elemen: 'Nilai Agama & Budi Pekerti', teks_narasi: `Alhamdulillah, selama semester ${sem} ini Ananda menunjukkan perkembangan yang sangat memuaskan dalam pembiasaan adab Islami, hafalan doa harian, dan melafalkan kalimat thayyibah bersama guru dan teman.`, foto_url: '' },
+                                        { elemen: 'Jati Diri', teks_narasi: `Ananda memiliki rasa percaya diri yang baik, mampu berinteraksi positif dengan teman sebaya, serta menunjukkan kemandirian dalam merawat diri dan lingkungan sekitar. ${affirmation}`, foto_url: '' },
+                                        { elemen: 'Dasar Literasi & STEAM', teks_narasi: `Ananda aktif dalam kegiatan membaca cerita bergambar, mampu mengekspresikan gagasan melalui karya seni visual, dan memiliki rasa ingin tahu yang tinggi dalam eksplorasi sains sederhana.`, foto_url: '' },
+                                        { elemen: 'Kokurikuler / Dimensi Profil Lulusan', teks_narasi: `Ananda senantiasa menunjukkan sikap gotong royong, nalar kritis saat bertanya, serta kedisiplinan dalam mengikuti rutinitas sekolah dengan gembira.`, foto_url: '' },
+                                        { elemen: 'Laporan Perkembangan Diniyyah', teks_narasi: `Alhamdulillah, Ananda antusias dalam menghafal surat-surat pendek (Juz 'Amma) dan mempraktikkan gerakan wudhu serta sholat dengan bimbingan ustadzah.`, foto_url: '' },
+                                        { elemen: 'ESL English Program', teks_narasi: `Ananda is able to understand simple daily classroom instructions and actively repeats greetings, color names, and numbers in English with confidence.`, foto_url: '' },
+                                        { elemen: 'Mathematic', teks_narasi: `Ananda can recognize basic geometric shapes, compare sizes, and count objects sequentially up to 20 with good concentration.`, foto_url: '' },
+                                        { elemen: 'Science', teks_narasi: `Ananda shows great curiosity during hands-on science experiments, observing nature and changes of matter with enthusiasm.`, foto_url: '' }
+                                    ];
+                                }
+                            } catch(e) {}
+
+                            result = {
+                                status: true,
+                                data: {
+                                    observasi: [],
+                                    narasi: savedNarasi,
+                                    iktp: allIktp,
+                                    checklist: savedChecklist
+                                }
+                            };
+                        } else if (action === 'saveTK') {
+                            const nis = String(data.nis || '').trim();
+                            const sem = String(data.semester || '1').trim();
+                            const elemen = data.elemen;
+                            let currentNarasi = [];
+                            try {
+                                const stored = localStorage.getItem(`alimam_narasi_${nis}_${sem}`);
+                                if (stored) currentNarasi = JSON.parse(stored);
+                            } catch(e) {}
+                            
+                            const idx = currentNarasi.findIndex(n => n.elemen === elemen);
+                            if (idx >= 0) {
+                                currentNarasi[idx].teks_narasi = data.teks_narasi;
+                                if (data.foto_url !== undefined) currentNarasi[idx].foto_url = data.foto_url;
+                            } else {
+                                currentNarasi.push({
+                                    elemen: elemen,
+                                    teks_narasi: data.teks_narasi,
+                                    foto_url: data.foto_url || ''
+                                });
+                            }
+                            localStorage.setItem(`alimam_narasi_${nis}_${sem}`, JSON.stringify(currentNarasi));
+                            result = { status: true, message: 'Narasi berhasil disimpan' };
+                        } else if (action === 'uploadFile') {
+                            result = { status: true, data: { url: data.base64 } };
+                        } else if (action === 'genAI') {
+                            const nama = data.nama || 'Ananda';
+                            const elemen = data.elemen || 'Perkembangan';
+                            result = {
+                                status: true,
+                                data: `Alhamdulillah, dalam elemen ${elemen}, Ananda ${nama} menunjukkan capaian yang sangat baik dan berkembang sesuai usianya. Ananda aktif, antusias mengikuti setiap kegiatan terpadu, serta mampu bekerja sama dan mandiri bersama teman-temannya di kelas.`
+                            };
+                        }
+                    } catch(err) {
+                        console.error('apiCall error:', err);
+                        result = { status: false, message: err.message };
+                    }
+
+                    if (this._successHandler) {
+                        this._successHandler(result);
+                    }
+                }, 60);
+                return this;
+            }
+        };
+
+        // Original TK_View_Checklist Controller
+        function tkChecklistInput() {
+        return {
+            listSiswa: [],
+            listIndicators: [],
+            selectedNis: '',
+            semester: '1',
+            category: 'Agama',
+            filterKelas: '',
+            filterGuru: '',
+            ratings: {}, // Map of id_iktp -> rating (e.g., 'BB', 'MB', 'BSH', 'BSB', 'NI', 'G', 'E')
+            loading: false,
+            saving: false,
+
+            defaultTeachers: [
+                'Bu Nurlaela',
+                'Ustadzah Nur Hikmah',
+                'Ustadzah Halizah',
+                'Ustadzah Muttia Ghina',
+                'Ustadzah Dian',
+                'Ustadzah Sahla'
+            ],
+
+            getStudentClass() {
+                const s = this.listSiswa.find(x => x.nis === this.selectedNis);
+                return s ? s.kelas_id : '';
+            },
+
+            init() {
+                this.loadSiswa();
+            },
+
+            loadSiswa() {
+                google.script.run.withSuccessHandler(res => {
+                    this.listSiswa = res?.data || [];
+                }).apiCall('getSiswa');
+            },
+
+            get availableWaliList() {
+                const names = new Set();
+                this.listSiswa.forEach(s => {
+                    if (s.wali_kelas) names.add(s.wali_kelas);
+                });
+                this.defaultTeachers.forEach(t => names.add(t));
+                return Array.from(names);
+            },
+
+            getAssignedWali(kelasId) {
+                const c = (kelasId || '').toUpperCase();
+                if (c.includes('PLAYGROUP') || c === 'PG') return 'Bu Nurlaela';
+                if (c === 'TK A') return 'Ustadzah Dian / Sahla';
+                if (c === 'TK B') return 'Ustadzah Nur Hikmah / Halizah / Muttia';
+                return '';
+            },
+
+            get listSiswaFiltered() {
+                return this.listSiswa.filter(s => {
+                    if (this.filterKelas) {
+                        const targetK = this.filterKelas.toUpperCase();
+                        const sK = (s.kelas_id || '').toUpperCase();
+                        if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
+                        if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
+                    }
+
+                    if (this.filterGuru) {
+                        const sWali = s.wali_kelas || this.getAssignedWali(s.kelas_id);
+                        if (!sWali.toLowerCase().includes(this.filterGuru.toLowerCase())) return false;
+                    }
+
+                    return true;
+                });
+            },
+
+            isEnglishMathScience() {
+                return ['English', 'Math', 'Science'].includes(this.category);
+            },
+
+            getCategoryLabel() {
+                const maps = {
+                    'Agama': 'Nilai Agama & Budi Pekerti',
+                    'Jati Diri': 'Jati Diri',
+                    'Literasi & STEAM': 'Dasar Literasi & STEAM',
+                    'Kokurikuler': 'Kokurikuler / Dimensi Profil Lulusan',
+                    'Diniyah': 'Laporan Perkembangan Diniyyah',
+                    'English': 'ESL English Program',
+                    'Math': 'Mathematic',
+                    'Science': 'Science'
+                };
+                return maps[this.category] || this.category;
+            },
+
+            loadIndicators() {
+                if (!this.category) return;
+                this.loading = true;
+                this.listIndicators = [];
+                google.script.run.withSuccessHandler(res => {
+                    this.listIndicators = res?.data || [];
+                    this.loadRatings();
+                }).apiCall('getIKTP', JSON.stringify({ elemen: this.getCategoryLabel() }));
+            },
+
+            loadRatings() {
+                if (!this.selectedNis || !this.semester || this.listIndicators.length === 0) {
+                    this.loading = false;
+                    return;
+                }
+                this.loading = true;
+                google.script.run.withSuccessHandler(res => {
+                    // Reset ratings
+                    this.ratings = {};
+                    
+                    // Initialize with empty strings for all loaded indicators
+                    this.listIndicators.forEach(item => {
+                        this.ratings[item.id_iktp] = '';
+                    });
+
+                    // Populate with fetched ratings
+                    if (res && res.data) {
+                        res.data.forEach(row => {
+                            if (this.ratings[row.id_iktp] !== undefined) {
+                                this.ratings[row.id_iktp] = row.nilai;
+                            }
+                        });
+                    }
+                    this.loading = false;
+                }).apiCall('getTK_Checklist', JSON.stringify({ nis: this.selectedNis, semester: this.semester }));
+            },
+
+            saveRatings() {
+                if (!this.selectedNis) return alert("Pilih Siswa!");
+                
+                // Validate that at least some ratings are filled
+                const ratingsToSave = {};
+                let count = 0;
+                Object.keys(this.ratings).forEach(idIktp => {
+                    if (this.ratings[idIktp]) {
+                        ratingsToSave[idIktp] = this.ratings[idIktp];
+                        count++;
+                    }
+                });
+
+                if (count === 0) {
+                    return alert("Mohon berikan setidaknya satu penilaian skala perkembangan sebelum menyimpan.");
+                }
+
+                this.saving = true;
+                google.script.run.withSuccessHandler(res => {
+                    this.saving = false;
+                    if (res && res.status) {
+                        alert(`Berhasil menyimpan ${count} nilai perkembangan untuk kategori ${this.getCategoryLabel()}!`);
+                        this.loadRatings();
+                    } else {
+                        alert("Gagal menyimpan: " + (res?.message || "Unknown error"));
+                    }
+                }).apiCall('saveTK_Checklist', JSON.stringify({
+                    nis: this.selectedNis,
+                    semester: this.semester,
+                    category: this.category,
+                    ratings: ratingsToSave
+                }));
+            }
+        }
+    }
+
+        // Original TK_View_Cetak Controller
+        if (typeof tkReportView === 'undefined') {
+        function tkReportView() {
+            return {
+                listSiswa: [],
+                searchNis: '',
+                semester: '1',
+                filterKelas: '',
+                loading: false,
+                reportReady: false,
+                siswa: {},
+                dataRapor: { narasi: [], checklist: [] },
+
+                init() {
+                    this.loadSiswa();
+                },
+
+                loadSiswa() {
+                    google.script.run.withSuccessHandler(res => {
+                        this.listSiswa = res?.data || [];
+                    }).apiCall('getSiswa');
+                },
+
+                get listSiswaFiltered() {
+                    return this.listSiswa.filter(s => {
+                        if (this.filterKelas) {
+                            const targetK = this.filterKelas.toUpperCase();
+                            const sK = (s.kelas_id || '').toUpperCase();
+                            if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
+                            if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
+                        }
+                        return true;
+                    });
+                },
+
+                getAssignedWali(kelasId) {
+                    const c = (kelasId || '').toUpperCase();
+                    if (c.includes('PLAYGROUP') || c === 'PG') return 'Bu Nurlaela';
+                    if (c === 'TK A') return 'Ustadzah Dian / Sahla';
+                    if (c === 'TK B') return 'Ustadzah Nur Hikmah / Halizah / Muttia';
+                    return '-';
+                },
+
+                // Local inputs for narrative editor
+                localNarratives: {},
+                localPhotos: {},
+                aiLoading: {},
+
+                // Google Drive Direct Link Backgrounds (Placeholders)
+                // Ganti 'MASUKKAN_ID_FILE_1_DISINI' dengan ID file gambar Anda dari Google Drive
+                bgImages: [
+                    'https://lh3.googleusercontent.com/d/1aeMhaJhIsROMLVZ-gu09P2FuGlwITGC2', // Gambar 1 (Toys / Mainan)
+                    'https://lh3.googleusercontent.com/d/1MYyq5HOG9ZBVpdfXbb5xQQ-z2ngvHPtd', // Gambar 2 (Bricks / Balok)
+                    'https://lh3.googleusercontent.com/d/1c-K0bZKt4eqQbbrF4d-SEQ91UNUn5hB9', // Gambar 3 (Pencils / Pensil)
+                ],
+
+                getBgStyle(idx) {
+                    const bgUrl = this.bgImages[idx % this.bgImages.length];
+                    if (bgUrl.includes('MASUKKAN_ID_FILE_')) {
+                        return 'background-color: #ffffff;'; // Fallback ke warna putih jika belum diset
+                    }
+                    return `background-image: url('${bgUrl}'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;`;
+                },
+
+                generatePreview() {
+                    if (!this.searchNis) return alert("Pilih Siswa!");
+                    this.loading = true;
+                    google.script.run.withSuccessHandler(res => {
+                        this.siswa = (res?.data || []).find(s => String(s.nis).trim() === String(this.searchNis).trim());
+                        if (!this.siswa) return (alert("Siswa tidak ditemukan!"), this.loading = false);
+
+                        google.script.run.withSuccessHandler(rep => {
+                            this.dataRapor = rep.data;
+
+                            // Initialize local narratives and photos
+                            this.localNarratives = {};
+                            this.localPhotos = {};
+                            this.aiLoading = {};
+
+                            ['Agama', 'Jati Diri', 'Literasi & STEAM', 'Kokurikuler', 'Diniyah', 'English', 'Math', 'Science'].forEach(cat => {
+                                const fullLabel = this.getCategoryFullLabel(cat);
+                                const existing = this.dataRapor.narasi.find(n => n.elemen === fullLabel);
+                                this.localNarratives[cat] = existing ? existing.teks_narasi : 'Alhamdulillah, Ananda menunjukkan perkembangan yang baik pada elemen ini. Selengkapnya akan dibahas saat konsultasi orang tua.';
+                                this.localPhotos[cat] = existing ? existing.foto_url : '';
+                                this.aiLoading[cat] = false;
+                            });
+
+                            this.reportReady = true;
+                            this.loading = false;
+                        }).apiCall('getReportTK', JSON.stringify({ nis: this.searchNis, semester: this.semester }));
+                    }).apiCall('getSiswa');
+                },
+
+                generateAINarrative(cat) {
+                    this.aiLoading[cat] = true;
+                    const fullLabel = this.getCategoryFullLabel(cat);
+
+                    // Compile indicators and ratings
+                    const listIndicators = this.getIndicatorsFor(cat);
+                    const listRatings = listIndicators.map(i => ({
+                        indikator: i.indikator || i.id_iktp,
+                        nilai: this.getRating(i.id_iktp) || 'MB'
+                    }));
+
+                    google.script.run.withSuccessHandler(res => {
+                        this.aiLoading[cat] = false;
+                        if (res && res.status && res.data) {
+                            this.localNarratives[cat] = res.data;
+                            this.saveNarasi(cat);
+                        } else {
+                            alert("Gagal memproses AI: " + (res?.message || "Error"));
+                        }
+                    }).apiCall('genAI', JSON.stringify({
+                        nama: this.siswa.nama_lengkap,
+                        gender: this.siswa.jenis_kelamin,
+                        elemen: fullLabel,
+                        list_iktp: listRatings
+                    }));
+                },
+
+                uploadPhoto(e, cat) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        google.script.run.withSuccessHandler(res => {
+                            if (res && res.status && res.data && res.data.url) {
+                                this.localPhotos[cat] = res.data.url;
+                                this.saveNarasi(cat);
+                            } else {
+                                alert("Gagal mengunggah foto: " + (res?.message || "Error"));
+                            }
+                        }).apiCall('uploadFile', JSON.stringify({
+                            base64: event.target.result,
+                            fileName: `rapor_${this.searchNis}_${cat.replace(/\s+/g, '_')}_${file.name}`
+                        }));
+                    };
+                    reader.readAsDataURL(file);
+                },
+
+                saveNarasi(cat) {
+                    google.script.run.withSuccessHandler(res => {
+                        // Success silently
+                    }).apiCall('saveTK', JSON.stringify({
+                        nis: this.searchNis,
+                        semester: this.semester,
+                        elemen: this.getCategoryFullLabel(cat),
+                        teks_narasi: this.localNarratives[cat],
+                        foto_url: this.localPhotos[cat]
+                    }));
+                },
+
+                getCategoryTitle(cat) {
+                    const maps = {
+                        'Agama': 'NILAI AGAMA DAN BUDI PEKERTI',
+                        'Jati Diri': 'JATI DIRI',
+                        'Literasi & STEAM': 'DASAR LITERASI, MATEMATIKA, SAINS, TEKNOLOGI, REKAYASA, DAN SENI (STEAM)',
+                        'Kokurikuler': 'KATEGORI PENILAIAN KOKURIKULER / DIMENSI PROFIL LULUSAN',
+                        'Diniyah': 'LAPORAN PERKEMBANGAN DINIYYAH',
+                        'English': 'ENGLISH AS A SECOND LANGUAGE PROGRAM',
+                        'Math': 'MATHEMATIC',
+                        'Science': 'SCIENCE'
+                    };
+                    return maps[cat] || cat.toUpperCase();
+                },
+
+                isEnglishScale(cat) {
+                    return ['English', 'Math', 'Science'].includes(cat);
+                },
+
+                getCategoryFullLabel(cat) {
+                    const maps = {
+                        'Agama': 'Nilai Agama & Budi Pekerti',
+                        'Jati Diri': 'Jati Diri',
+                        'Literasi & STEAM': 'Dasar Literasi & STEAM',
+                        'Kokurikuler': 'Kokurikuler / Dimensi Profil Lulusan',
+                        'Diniyah': 'Laporan Perkembangan Diniyyah',
+                        'English': 'ESL English Program',
+                        'Math': 'Mathematic',
+                        'Science': 'Science'
+                    };
+                    return maps[cat] || cat;
+                },
+
+                getIndicatorsFor(cat) {
+                    if (!this.dataRapor.iktp) return [];
+                    const targetElemen = this.getCategoryFullLabel(cat).trim().toLowerCase();
+                    return this.dataRapor.iktp.filter(i => {
+                        const itemElemen = String(i.elemen || '').trim().toLowerCase();
+                        if (itemElemen !== targetElemen) return false;
+                        const sClass = this.siswa.kelas_id || '';
+                        const itemKelas = i.kelas || i.tujuan_pembelajaran || '';
+                        return !itemKelas || itemKelas.trim() === '' || sClass.toUpperCase().includes(itemKelas.toUpperCase());
+                    });
+                },
+
+                getRating(idIktp) {
+                    if (!this.dataRapor.checklist) return '';
+                    const r = this.dataRapor.checklist.find(d => d.id_iktp === idIktp);
+                    return r ? r.nilai : '';
+                },
+
+                getNarasi(cat) {
+                    if (!this.dataRapor.narasi) return null;
+                    let n = this.dataRapor.narasi.find(i => i.elemen === cat);
+                    if (n) return n.teks_narasi;
+                    const firstWord = cat.toLowerCase().split(' ')[0];
+                    n = this.dataRapor.narasi.find(i => i.elemen.toLowerCase().includes(firstWord));
+                    return n ? n.teks_narasi : null;
+                }
+            }
+        }
+    }
+    </script>
+
 </body>
 </html>
