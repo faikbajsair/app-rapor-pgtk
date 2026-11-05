@@ -1,0 +1,581 @@
+<!-- AD_View_Siswa.html -->
+<div x-data="siswaAdmin()" class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/80 p-5 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm">
+        <div>
+            <h3 class="text-xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <span class="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </span>
+                <span>Manajemen & Klasifikasi Data Siswa</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Kelola pembagian kelas dan penetapan guru wali kelas untuk setiap siswa</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button @click="openBulkModal()"
+                class="px-4 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200/70 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-all flex items-center gap-2 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>Bulk Upload CSV</span>
+            </button>
+            <button @click="resetForm()"
+                class="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2 shadow-md shadow-emerald-500/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                <span>Tambah Siswa Baru</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Klasifikasi Summary Cards (Quick Stats & Filtering) -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <!-- Total Siswa -->
+        <div @click="filterKelas = ''; filterGuru = ''" 
+            class="p-4 rounded-2xl border transition-all cursor-pointer bg-white/90 hover:shadow-md"
+            :class="!filterKelas && !filterGuru ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm' : 'border-slate-200/80'">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Semua Siswa</span>
+                <span class="p-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs">🏫</span>
+            </div>
+            <div class="text-2xl font-black text-slate-800" x-text="listSiswa.length">0</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Total terdaftar</div>
+        </div>
+
+        <!-- Playgroup -->
+        <div @click="filterKelas = 'Playgroup'" 
+            class="p-4 rounded-2xl border transition-all cursor-pointer bg-white/90 hover:shadow-md"
+            :class="filterKelas === 'Playgroup' ? 'border-amber-500 ring-2 ring-amber-500/20 shadow-sm' : 'border-slate-200/80'">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Playgroup</span>
+                <span class="p-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold">PG</span>
+            </div>
+            <div class="text-2xl font-black text-amber-800" x-text="countByClass('Playgroup')">0</div>
+            <div class="text-[10px] text-amber-600/80 mt-0.5 font-medium">Wali: Bu Nurlaela</div>
+        </div>
+
+        <!-- TK A -->
+        <div @click="filterKelas = 'TK A'" 
+            class="p-4 rounded-2xl border transition-all cursor-pointer bg-white/90 hover:shadow-md"
+            :class="filterKelas === 'TK A' ? 'border-sky-500 ring-2 ring-sky-500/20 shadow-sm' : 'border-slate-200/80'">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-sky-700">TK A</span>
+                <span class="p-1.5 bg-sky-50 text-sky-600 rounded-lg text-xs font-bold">TK A</span>
+            </div>
+            <div class="text-2xl font-black text-sky-800" x-text="countByClass('TK A')">0</div>
+            <div class="text-[10px] text-sky-600/80 mt-0.5 font-medium">Wali: Ust. Dian, Sahla</div>
+        </div>
+
+        <!-- TK B -->
+        <div @click="filterKelas = 'TK B'" 
+            class="p-4 rounded-2xl border transition-all cursor-pointer bg-white/90 hover:shadow-md"
+            :class="filterKelas === 'TK B' ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200/80'">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-700">TK B</span>
+                <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">TK B</span>
+            </div>
+            <div class="text-2xl font-black text-indigo-800" x-text="countByClass('TK B')">0</div>
+            <div class="text-[10px] text-indigo-600/80 mt-0.5 font-medium">Wali: Ust. Nur Hikmah, Halizah, Muttia</div>
+        </div>
+    </div>
+
+    <!-- Main Layout: Form (Left) & Classification Table (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Form Tambah / Edit Siswa -->
+        <div class="lg:col-span-4 bg-white/90 p-6 rounded-2xl border border-white/60 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h4 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" :class="isEditing ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                    <span x-text="isEditing ? 'Edit Data Siswa' : 'Tambah Siswa Baru'"></span>
+                </h4>
+                <template x-if="isEditing">
+                    <button @click="resetForm()" class="text-xs text-rose-600 hover:underline font-semibold">Batal Edit</button>
+                </template>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">NIS (Wajib)*</label>
+                        <input type="text" x-model="form.nis" :disabled="isEditing" placeholder="Contoh: 24001"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50 disabled:bg-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">NISN</label>
+                        <input type="text" x-model="form.nisn" placeholder="NISN Nasional"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Lengkap Siswa*</label>
+                    <input type="text" x-model="form.nama_lengkap" placeholder="Nama Lengkap Ananda"
+                        class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50 font-medium">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Dropdown Kelas -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kelas*</label>
+                        <select x-model="form.kelas_id" @change="autoSelectWaliKelas()"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50 font-medium">
+                            <option value="">-- Pilih Kelas --</option>
+                            <option value="Playgroup">Playgroup (PG)</option>
+                            <option value="TK A">TK A</option>
+                            <option value="TK B">TK B</option>
+                        </select>
+                    </div>
+
+                    <!-- Jenis Kelamin -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis Kelamin</label>
+                        <select x-model="form.jenis_kelamin"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50">
+                            <option value="L">Laki-laki (L)</option>
+                            <option value="P">Perempuan (P)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Klasifikasi Guru Wali Kelas -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1 flex items-center justify-between">
+                        <span>Guru Wali Kelas*</span>
+                        <span class="text-[10px] text-emerald-600 font-semibold">Penetapan Guru</span>
+                    </label>
+                    <select x-model="form.wali_kelas"
+                        class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-emerald-50/30 font-semibold text-slate-800">
+                        <option value="">-- Pilih Guru Wali Kelas --</option>
+                        <template x-for="g in availableWaliList" :key="g">
+                            <option :value="g" x-text="g"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Tempat Lahir</label>
+                        <input type="text" x-model="form.tempat_lahir" placeholder="Contoh: Bogor"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Lahir</label>
+                        <input type="date" x-model="form.tanggal_lahir"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Ayah / Wali</label>
+                        <input type="text" x-model="form.nama_ayah" placeholder="Nama Orang Tua"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pass Login Wali</label>
+                        <input type="text" x-model="form.password_wali" placeholder="Pass Wali Murid"
+                            class="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-slate-50/50">
+                    </div>
+                </div>
+
+                <button @click="save()" :disabled="saving"
+                    class="w-full mt-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2">
+                    <span x-show="!saving" x-text="isEditing ? 'Simpan Perubahan Siswa' : 'Simpan Siswa Baru'"></span>
+                    <span x-show="saving" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Table & Filter Controls (Right) -->
+        <div class="lg:col-span-8 space-y-4">
+            <!-- Filter Bar -->
+            <div class="bg-white/90 p-4 rounded-2xl border border-white/60 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <!-- Filter Kelas -->
+                    <select x-model="filterKelas" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50/60 font-semibold text-slate-700 outline-none">
+                        <option value="">Semua Kelas</option>
+                        <option value="Playgroup">Playgroup</option>
+                        <option value="TK A">TK A</option>
+                        <option value="TK B">TK B</option>
+                    </select>
+
+                    <!-- Filter Guru Wali Kelas -->
+                    <select x-model="filterGuru" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50/60 font-semibold text-slate-700 outline-none">
+                        <option value="">Semua Guru Wali</option>
+                        <template x-for="g in availableWaliList" :key="g">
+                            <option :value="g" x-text="g"></option>
+                        </template>
+                    </select>
+
+                    <!-- Reset Filter -->
+                    <button x-show="filterKelas || filterGuru || searchQuery" @click="filterKelas=''; filterGuru=''; searchQuery=''" 
+                        class="p-2 text-slate-400 hover:text-rose-600 transition-colors text-xs font-semibold flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Reset</span>
+                    </button>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-64">
+                    <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, orang tua..."
+                        class="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/60 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Table Siswa Terklasifikasi -->
+            <div class="bg-white/90 rounded-2xl border border-white/60 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/40">
+                    <span class="text-xs font-bold text-slate-600">
+                        Menampilkan <span class="text-emerald-600 font-extrabold" x-text="filteredSiswaList.length"></span> dari <span x-text="listSiswa.length"></span> Siswa
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium">Klik tombol Edit untuk memperbarui data / guru wali</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-50/80 text-[11px] uppercase font-bold text-slate-600 border-b border-slate-200/80">
+                            <tr>
+                                <th class="p-3.5">Siswa</th>
+                                <th class="p-3.5 text-center">Kelas</th>
+                                <th class="p-3.5">Guru Wali Kelas</th>
+                                <th class="p-3.5">Orang Tua / Wali</th>
+                                <th class="p-3.5 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="s in filteredSiswaList" :key="s.nis">
+                                <tr class="hover:bg-emerald-50/20 transition-colors">
+                                    <!-- Siswa -->
+                                    <td class="p-3.5">
+                                        <div class="font-extrabold text-slate-800" x-text="s.nama_lengkap"></div>
+                                        <div class="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                            <span>NIS: <strong class="text-slate-600" x-text="s.nis"></strong></span>
+                                            <template x-if="s.jenis_kelamin">
+                                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold"
+                                                    :class="s.jenis_kelamin === 'L' ? 'bg-sky-50 text-sky-700' : 'bg-pink-50 text-pink-700'"
+                                                    x-text="s.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'"></span>
+                                            </template>
+                                        </div>
+                                    </td>
+
+                                    <!-- Badge Kelas -->
+                                    <td class="p-3.5 text-center">
+                                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-wide uppercase shadow-2xs"
+                                            :class="getClassBadgeClass(s.kelas_id)"
+                                            x-text="s.kelas_id || '-'"></span>
+                                    </td>
+
+                                    <!-- Badge Guru Wali -->
+                                    <td class="p-3.5">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black flex-shrink-0">
+                                                👩‍🏫
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-slate-700" x-text="s.wali_kelas || getAssignedWali(s.kelas_id)"></div>
+                                                <div class="text-[9px] text-emerald-600 font-medium">Wali Kelas</div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Orang Tua / Login -->
+                                    <td class="p-3.5">
+                                        <div class="text-slate-700 font-medium" x-text="s.nama_ayah || '-'"></div>
+                                        <template x-if="s.password_wali">
+                                            <div class="text-[10px] text-slate-400">Pass: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono" x-text="s.password_wali"></code></div>
+                                        </template>
+                                    </td>
+
+                                    <!-- Aksi -->
+                                    <td class="p-3.5 text-center">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button @click="editSiswa(s)" title="Edit Siswa"
+                                                class="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg transition-all">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            </button>
+                                            <button @click="deleteSiswa(s.nis, s.nama_lengkap)" title="Hapus Siswa"
+                                                class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <template x-if="filteredSiswaList.length === 0">
+                                <tr>
+                                    <td colspan="5" class="p-8 text-center text-slate-400">
+                                        <div class="flex flex-col items-center justify-center gap-2">
+                                            <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                            <span class="font-semibold text-xs">Tidak ada siswa yang sesuai dengan filter/pencarian ini.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Bulk Upload CSV -->
+    <div x-show="showUpload" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in" x-cloak>
+        <div class="bg-white p-6 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-black text-slate-800 text-base">Bulk Upload Data Siswa & Wali Kelas</h3>
+                <button @click="showUpload=false" class="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            
+            <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100 text-[11px] text-emerald-900 space-y-1">
+                <div class="font-bold">Format Kolom CSV (10 Kolom):</div>
+                <div class="font-mono text-[10px] bg-white p-2 rounded border border-emerald-200 overflow-x-auto whitespace-nowrap">
+                    nis,nisn,nama_lengkap,kelas_id,jenis_kelamin,tempat_lahir,tanggal_lahir,nama_ayah,password_wali,wali_kelas
+                </div>
+                <div class="text-[10px] text-emerald-700 mt-1">
+                    * Kolom <code>wali_kelas</code> opsional namun sangat dianjurkan untuk klasifikasi otomatis guru.
+                </div>
+            </div>
+
+            <textarea x-model="csvText" rows="6" class="w-full p-3 border border-slate-200 rounded-xl text-xs font-mono bg-slate-50 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                placeholder="24001,0012345,Muhammad Farhan,TK B,L,Bogor,2019-05-12,Ahmad,pass123,Ustadzah Nur Hikmah&#10;24002,0012346,Aisyah Humaira,TK A,P,Jakarta,2020-02-18,Umar,pass456,Ustadzah Dian"></textarea>
+
+            <div class="flex gap-2">
+                <button @click="processUpload()" :disabled="saving"
+                    class="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2">
+                    <span x-show="!saving">Unggah Data Siswa</span>
+                    <span x-show="saving" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                </button>
+                <button @click="showUpload=false" class="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-semibold text-xs">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function siswaAdmin() {
+        return {
+            listSiswa: [],
+            listGuru: [],
+            showUpload: false,
+            saving: false,
+            isEditing: false,
+            csvText: '',
+            filterKelas: '',
+            filterGuru: '',
+            searchQuery: '',
+            
+            // Standard teacher list fallback
+            defaultTeachers: [
+                'Bu Nurlaela',
+                'Ustadzah Nur Hikmah',
+                'Ustadzah Halizah',
+                'Ustadzah Muttia Ghina',
+                'Ustadzah Dian',
+                'Ustadzah Sahla'
+            ],
+
+            form: {
+                nis: '',
+                nisn: '',
+                nama_lengkap: '',
+                kelas_id: 'TK A',
+                jenis_kelamin: 'L',
+                tempat_lahir: '',
+                tanggal_lahir: '',
+                nama_ayah: '',
+                password_wali: '',
+                wali_kelas: ''
+            },
+
+            init() {
+                this.load();
+                this.loadGuru();
+            },
+
+            load() {
+                google.script.run.withSuccessHandler(res => {
+                    if (res && res.status && res.data) {
+                        this.listSiswa = res.data;
+                    } else {
+                        console.error("Gagal load siswa:", res);
+                    }
+                }).apiCall('getSiswa');
+            },
+
+            loadGuru() {
+                google.script.run.withSuccessHandler(res => {
+                    if (res && res.status && res.data) {
+                        this.listGuru = res.data;
+                    }
+                }).apiCall('getGuru');
+            },
+
+            get availableWaliList() {
+                const names = new Set();
+                // Add from listGuru (teachers)
+                this.listGuru.forEach(g => {
+                    if (g.nama && g.role !== 'Admin') names.add(g.nama);
+                });
+                // Add default homeroom teachers
+                this.defaultTeachers.forEach(t => names.add(t));
+                return Array.from(names);
+            },
+
+            autoSelectWaliKelas() {
+                if (!this.form.wali_kelas || this.form.wali_kelas === '') {
+                    const c = (this.form.kelas_id || '').toUpperCase();
+                    if (c.includes('PLAYGROUP') || c === 'PG') {
+                        this.form.wali_kelas = 'Bu Nurlaela';
+                    } else if (c === 'TK A') {
+                        this.form.wali_kelas = 'Ustadzah Dian';
+                    } else if (c === 'TK B') {
+                        this.form.wali_kelas = 'Ustadzah Nur Hikmah';
+                    }
+                }
+            },
+
+            getAssignedWali(kelasId) {
+                const c = (kelasId || '').toUpperCase();
+                if (c.includes('PLAYGROUP') || c === 'PG') return 'Bu Nurlaela';
+                if (c === 'TK A') return 'Ustadzah Dian / Sahla';
+                if (c === 'TK B') return 'Ustadzah Nur Hikmah / Halizah / Muttia';
+                return 'Belum Ditentukan';
+            },
+
+            countByClass(className) {
+                const target = className.toUpperCase();
+                return this.listSiswa.filter(s => {
+                    const k = (s.kelas_id || '').toUpperCase();
+                    if (target === 'PLAYGROUP') return k.includes('PLAYGROUP') || k === 'PG';
+                    return k === target || k.includes(target);
+                }).length;
+            },
+
+            getClassBadgeClass(kelasId) {
+                const k = (kelasId || '').toUpperCase();
+                if (k.includes('PLAYGROUP') || k === 'PG') return 'bg-amber-100 text-amber-800 border border-amber-200';
+                if (k === 'TK A' || k.includes('TKA')) return 'bg-sky-100 text-sky-800 border border-sky-200';
+                if (k === 'TK B' || k.includes('TKB')) return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+                return 'bg-slate-100 text-slate-700 border border-slate-200';
+            },
+
+            get filteredSiswaList() {
+                return this.listSiswa.filter(s => {
+                    // Filter Kelas
+                    if (this.filterKelas) {
+                        const targetK = this.filterKelas.toUpperCase();
+                        const sK = (s.kelas_id || '').toUpperCase();
+                        if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
+                        if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
+                    }
+
+                    // Filter Guru Wali Kelas
+                    if (this.filterGuru) {
+                        const sWali = s.wali_kelas || this.getAssignedWali(s.kelas_id);
+                        if (!sWali.toLowerCase().includes(this.filterGuru.toLowerCase())) return false;
+                    }
+
+                    // Filter Search Query
+                    if (this.searchQuery) {
+                        const q = this.searchQuery.toLowerCase().trim();
+                        const matchName = (s.nama_lengkap || '').toLowerCase().includes(q);
+                        const matchNis = (s.nis || '').toString().toLowerCase().includes(q);
+                        const matchNisn = (s.nisn || '').toString().toLowerCase().includes(q);
+                        const matchAyah = (s.nama_ayah || '').toLowerCase().includes(q);
+                        const matchWali = (s.wali_kelas || '').toLowerCase().includes(q);
+                        if (!matchName && !matchNis && !matchNisn && !matchAyah && !matchWali) return false;
+                    }
+
+                    return true;
+                });
+            },
+
+            editSiswa(s) {
+                this.isEditing = true;
+                this.form = {
+                    nis: s.nis || '',
+                    nisn: s.nisn || '',
+                    nama_lengkap: s.nama_lengkap || '',
+                    kelas_id: s.kelas_id || 'TK A',
+                    jenis_kelamin: s.jenis_kelamin || 'L',
+                    tempat_lahir: s.tempat_lahir || '',
+                    tanggal_lahir: s.tanggal_lahir || '',
+                    nama_ayah: s.nama_ayah || '',
+                    password_wali: s.password_wali || '',
+                    wali_kelas: s.wali_kelas || ''
+                };
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            resetForm() {
+                this.isEditing = false;
+                this.form = {
+                    nis: '',
+                    nisn: '',
+                    nama_lengkap: '',
+                    kelas_id: 'TK A',
+                    jenis_kelamin: 'L',
+                    tempat_lahir: '',
+                    tanggal_lahir: '',
+                    nama_ayah: '',
+                    password_wali: '',
+                    wali_kelas: ''
+                };
+            },
+
+            save() {
+                if (!this.form.nis || !this.form.nama_lengkap || !this.form.kelas_id) {
+                    alert("Mohon lengkapi NIS, Nama Siswa, dan Kelas!");
+                    return;
+                }
+                this.saving = true;
+                google.script.run.withSuccessHandler(res => {
+                    this.saving = false;
+                    if (res && res.status) {
+                        alert(this.isEditing ? "Data siswa berhasil diperbarui!" : "Siswa baru berhasil ditambahkan!");
+                        this.load();
+                        this.resetForm();
+                    } else {
+                        alert("Gagal menyimpan siswa: " + (res ? res.message : "Error"));
+                    }
+                }).apiCall('saveSiswa', JSON.stringify(this.form));
+            },
+
+            deleteSiswa(nis, nama) {
+                if (!confirm(`Apakah Anda yakin ingin menghapus data siswa ${nama} (NIS: ${nis})?`)) return;
+                google.script.run.withSuccessHandler(res => {
+                    if (res && res.status) {
+                        alert(`Siswa ${nama} berhasil dihapus.`);
+                        this.load();
+                    } else {
+                        alert("Gagal menghapus siswa: " + (res ? res.message : "Error"));
+                    }
+                }).apiCall('deleteSiswa', JSON.stringify({ nis: nis }));
+            },
+
+            openBulkModal() {
+                this.showUpload = true;
+            },
+
+            processUpload() {
+                if (!this.csvText || !this.csvText.trim()) return alert("Masukkan teks CSV terlebih dahulu.");
+                this.saving = true;
+                google.script.run.withSuccessHandler(res => {
+                    this.saving = false;
+                    if (res && res.status) {
+                        alert(res.data || "Bulk upload siswa berhasil!");
+                        this.showUpload = false;
+                        this.csvText = '';
+                        this.load();
+                    } else {
+                        alert("Gagal melakukan upload: " + (res ? res.message : "Error"));
+                    }
+                }).apiCall('bulkUpload', JSON.stringify({ type: 'SISWA', csv: this.csvText }));
+            }
+        };
+    }
+</script>

@@ -1,0 +1,132 @@
+<!-- TK_View_Input.html -->
+<div x-data="tkInput()">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Panel Kiri: Observasi -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
+                <h3 class="text-xl font-bold text-indigo-900">Input Observasi Harian</h3>
+                <div class="flex items-center gap-2">
+                    <select x-model="filterKelas" class="p-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                        <option value="">Semua Kelas</option>
+                        <option value="Playgroup">Playgroup</option>
+                        <option value="TK A">TK A</option>
+                        <option value="TK B">TK B</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Pilih Siswa</label>
+                    <select x-model="obs.nis" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
+                        <option value="">-- Pilih Siswa (<span x-text="listSiswaFiltered.length"></span> siswa) --</option>
+                        <template x-for="s in listSiswaFiltered" :key="s.nis">
+                            <option :value="s.nis" x-text="s.nama_lengkap + ' — [' + (s.kelas_id || 'TK') + (s.wali_kelas ? ' • ' + s.wali_kelas : '') + ']'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Tanggal Observasi</label>
+                    <input type="date" x-model="obs.tanggal" class="w-full p-2.5 border rounded-xl bg-gray-50 text-xs">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Catatan Anekdot</label>
+                    <textarea x-model="obs.catatan_anekdot" class="w-full h-32 p-3 border rounded-xl bg-gray-50 text-xs"
+                        placeholder="Ceritakan apa yang dilakukan Ananda hari ini..."></textarea>
+                </div>
+
+                <button @click="saveObs" :disabled="saving"
+                    class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3 rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 flex justify-center items-center">
+                    <span x-show="!saving">Simpan Observasi</span>
+                    <span x-show="saving"
+                        class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Checklist IKTP -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 overflow-y-auto max-h-[600px]">
+            <h3 class="text-xl font-bold text-indigo-900 mb-6">Checklist IKTP (Capaian)</h3>
+            <div class="space-y-4">
+                <template x-for="elemen in ['Agama','Jati Diri','Literasi & STEAM','Kokurikuler']" :key="elemen">
+                    <div class="border rounded-xl overflow-hidden">
+                        <div class="bg-indigo-50 p-3 font-bold text-indigo-900 text-xs" x-text="'Elemen: ' + elemen"></div>
+                        <div class="p-3 space-y-2">
+                            <template x-for="item in (listIKTP || []).filter(i => {
+                                const itemElemen = (i.elemen === 'Nilai Agama & Budi Pekerti' || i.elemen === 'Agama') ? 'Agama' : 
+                                                   ((i.elemen === 'Dasar Literasi & STEAM' || i.elemen === 'Literasi & STEAM') ? 'Literasi & STEAM' : 
+                                                   ((i.elemen === 'Kokurikuler / Dimensi Profil Lulusan' || i.elemen === 'Kokurikuler') ? 'Kokurikuler' : i.elemen));
+                                if (itemElemen !== elemen) return false;
+                                const sClass = getStudentClass();
+                                if (!sClass) return true;
+                                const itemKelas = i.kelas || i.tujuan_pembelajaran || '';
+                                return !itemKelas || itemKelas.trim() === '' || sClass.toUpperCase().includes(itemKelas.toUpperCase());
+                            })"
+                                :key="item.id_iktp">
+                                <label class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" :value="item.id_iktp" x-model="obs.list_iktp" class="mt-1">
+                                    <div class="text-xs">
+                                        <div class="font-bold text-gray-800" x-text="item.indikator"></div>
+                                        <div class="text-gray-500 text-[10px]" x-text="item.tujuan_pembelajaran"></div>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function tkInput() {
+        return {
+            listSiswa: [],
+            listIKTP: [],
+            filterKelas: '',
+            obs: { nis: '', tanggal: new Date().toISOString().split('T')[0], catatan_anekdot: '', list_iktp: [] },
+            saving: false,
+
+            getStudentClass() {
+                const s = this.listSiswa.find(x => x.nis === this.obs.nis);
+                return s ? s.kelas_id : '';
+            },
+
+            init() {
+                this.loadInitial();
+            },
+
+            loadInitial() {
+                if (typeof isLoggedIn !== 'undefined' && !isLoggedIn) return; // Tunggu login
+                google.script.run.withSuccessHandler(res => { this.listSiswa = res?.data || []; }).apiCall('getSiswa');
+                google.script.run.withSuccessHandler(res => { this.listIKTP = res?.data || []; }).apiCall('getIKTP');
+            },
+
+            get listSiswaFiltered() {
+                return this.listSiswa.filter(s => {
+                    if (this.filterKelas) {
+                        const targetK = this.filterKelas.toUpperCase();
+                        const sK = (s.kelas_id || '').toUpperCase();
+                        if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
+                        if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
+                    }
+                    return true;
+                });
+            },
+
+            saveObs() {
+                if (!this.obs.nis || !this.obs.catatan_anekdot) return alert("Mohon lengkapi siswa dan catatan anekdot!");
+                this.saving = true;
+                google.script.run.withSuccessHandler(() => {
+                    alert("Observasi berhasil disimpan!");
+                    this.obs.catatan_anekdot = '';
+                    this.obs.list_iktp = [];
+                    this.saving = false;
+                }).apiCall('saveTK_Obs', JSON.stringify(this.obs));
+            }
+        }
+    }
+</script>

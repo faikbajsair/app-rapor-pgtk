@@ -1,0 +1,79 @@
+<script>
+    function app() {
+        return {
+            view: 'dash',
+            isLoggedIn: false,
+            loading: false,
+            user: { nama: '', role: '', unit: '' },
+            loginForm: { user: '', pass: '' },
+            dashData: {
+                totalSiswa: 0,
+                levelCounts: { "Playgroup": 0, "TK A": 0, "TK B": 0 },
+                ratingCounts: { BB: 0, MB: 0, BSH: 0, BSB: 0, NI: 0, G: 0, E: 0 }
+            },
+
+            init() {
+                this.$watch('isLoggedIn', value => {
+                    if (value) {
+                        this.loadDashboard();
+                    }
+                });
+                this.$watch('view', value => {
+                    if (value === 'dash' && this.isLoggedIn) {
+                        this.loadDashboard();
+                    }
+                });
+            },
+
+            login() {
+                this.loading = true;
+                google.script.run.withSuccessHandler(res => {
+                    this.loading = false;
+                    if (res && res.status && res.data && res.data.status) {
+                        this.isLoggedIn = true;
+                        this.user = res.data;
+                    } else {
+                        const msg = (res && res.data) ? res.data.message : (res ? res.message : "Server Error");
+                        alert(msg || "Kredensial salah");
+                    }
+                }).apiCall('login', JSON.stringify({ username: this.loginForm.user, password: this.loginForm.pass }));
+            },
+
+            logout() {
+                this.isLoggedIn = false;
+                this.loginForm = { user: '', pass: '' };
+                this.view = 'dash';
+                this.dashData = {
+                    totalSiswa: 0,
+                    levelCounts: { "Playgroup": 0, "TK A": 0, "TK B": 0 },
+                    ratingCounts: { BB: 0, MB: 0, BSH: 0, BSB: 0, NI: 0, G: 0, E: 0 }
+                };
+            },
+
+            loadDashboard() {
+                if (this.user.role === 'WALI') return;
+                google.script.run.withSuccessHandler(res => {
+                    if (res && res.status && res.data) {
+                        this.dashData = res.data;
+                        // Dispatch custom event to render charts
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('dash-data-loaded', { detail: res.data }));
+                        }, 200);
+                    }
+                }).apiCall('getDashboard');
+            },
+
+            title() {
+                const maps = {
+                    'dash': 'Dashboard Terpadu',
+                    'tk_in': 'Penilaian PG-TK (AI)',
+                    'tk_chk': 'Penilaian Checklist Perkembangan PG-TK',
+                    'tk_out': 'Cetak Rapor PG-TK',
+                    'ad_guru': 'Manajemen Data Guru',
+                    'ad_siswa': 'Manajemen Data Siswa'
+                };
+                return maps[this.view];
+            }
+        }
+    }
+</script>

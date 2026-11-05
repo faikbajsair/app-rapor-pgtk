@@ -1,0 +1,555 @@
+<style>
+    /* Global Page Card Style (Screen & Print) */
+    .page-container {
+        width: 210mm;
+        height: 297mm;
+        padding: 25mm 20mm 38mm 20mm !important; /* Normal A4 margins: 25mm top/left/right, 38mm bottom safety margin */
+        box-sizing: border-box !important;
+        position: relative;
+        background-color: white;
+        overflow: hidden;
+        margin: 0 auto 2rem auto;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .page-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Table styles for dynamic scaling */
+    .normal-table th, .normal-table td {
+        padding: 4px 6px !important;
+        font-size: 8.5px !important;
+        line-height: 1.2 !important;
+    }
+    .normal-table .indicator-title {
+        font-size: 9px !important;
+        font-weight: bold !important;
+        color: #1e293b;
+    }
+
+    .compact-table th, .compact-table td {
+        padding: 2px 4px !important;
+        font-size: 7px !important;
+        line-height: 1.15 !important;
+    }
+    .compact-table .indicator-title {
+        font-size: 7.5px !important;
+        font-weight: bold !important;
+        color: #1e293b;
+    }
+
+    @media print {
+        @page {
+            size: A4;
+            margin: 0; /* Removes default browser header/footer and margins */
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: none;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .print-page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .page-container {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            background-color: white !important;
+        }
+    }
+</style>
+<div x-data="tkReportView()">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 no-print space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
+            <h2 class="text-xl font-bold text-gray-800">Cetak Rapor PG-TK</h2>
+            <div class="flex items-center gap-2">
+                <select x-model="filterKelas" class="p-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                    <option value="">Semua Kelas</option>
+                    <option value="Playgroup">Playgroup</option>
+                    <option value="TK A">TK A</option>
+                    <option value="TK B">TK B</option>
+                </select>
+                <select x-model="semester" class="p-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div class="md:col-span-6">
+                <label class="block text-xs font-bold text-gray-600 mb-1">Pilih Siswa</label>
+                <select x-model="searchNis" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
+                    <option value="">-- Pilih Siswa (<span x-text="listSiswaFiltered.length"></span> siswa) --</option>
+                    <template x-for="s in listSiswaFiltered" :key="s.nis">
+                        <option :value="s.nis" x-text="s.nama_lengkap + ' — [' + (s.kelas_id || 'TK') + (s.wali_kelas ? ' • ' + s.wali_kelas : '') + ']'"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-bold text-gray-600 mb-1">Atau Masukkan NIS</label>
+                <input type="text" x-model="searchNis" placeholder="Contoh: 24001"
+                    class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs">
+            </div>
+            <div class="md:col-span-3 flex items-end gap-2">
+                <button @click="generatePreview" :disabled="loading"
+                    class="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5">
+                    <span x-show="!loading">Preview Rapor</span>
+                    <span x-show="loading" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                </button>
+                <button @click="window.print()" x-show="reportReady"
+                    class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow-sm">
+                    🖨️ Cetak
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area Kertas Rapor TK (Wrapper Preview) -->
+    <div x-show="reportReady" class="mx-auto" style="width: 210mm; color: black;">
+        <template
+            x-for="(cat, idx) in ['Agama', 'Jati Diri', 'Literasi & STEAM', 'Kokurikuler', 'Diniyah', 'English', 'Math', 'Science']"
+            :key="cat">
+            <div :class="idx > 0 ? 'print-page-break' : ''">
+                <!-- A4 Page Card -->
+                <div :style="getBgStyle(idx)"
+                    class="page-container"
+                    style="color: black;">
+
+                <!-- Halaman Pertama: KOP & Identitas Lengkap -->
+                <template x-if="idx === 0">
+                    <div>
+                        <!-- KOP -->
+                        <div class="text-center mb-6 border-b-4 border-double border-indigo-900 pb-2">
+                            <h1 class="text-xl font-extrabold uppercase tracking-tight text-indigo-900">Laporan Capaian
+                                Pembelajaran</h1>
+                            <h2 class="text-sm font-bold text-gray-700">PG-TK AL-IMAM ISLAMIC SCHOOL</h2>
+                            <p class="text-[9px] italic text-gray-400">Membentuk Generasi Qur'ani, Cerdas, dan Beradab
+                            </p>
+                        </div>
+
+                        <!-- Identitas -->
+                        <div
+                            class="grid grid-cols-2 gap-4 mb-6 text-[10px] bg-indigo-50/30 p-3 rounded-xl border border-indigo-100">
+                            <div class="space-y-1">
+                                <p><span class="inline-block w-24 font-bold">Nama Ananda</span>: <strong
+                                        x-text="siswa.nama_lengkap"></strong></p>
+                                <p><span class="inline-block w-24 font-bold">Kelas</span>: <strong
+                                        x-text="siswa.kelas_id || '-'"></strong></p>
+                                <p><span class="inline-block w-24 font-bold">Guru Wali Kelas</span>: <span
+                                        x-text="siswa.wali_kelas || getAssignedWali(siswa.kelas_id)"></span></p>
+                            </div>
+                            <div class="space-y-1">
+                                <p><span class="inline-block w-24 font-bold">Fase</span>: Fondasi</p>
+                                <p><span class="inline-block w-24 font-bold">Semester</span>: <span
+                                        x-text="semester"></span></p>
+                                <p><span class="inline-block w-24 font-bold">Tahun Ajaran</span>: 2024/2025</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Halaman Kedua dst: Identitas Ringkas di Atas -->
+                <template x-if="idx > 0">
+                    <div
+                        class="flex justify-between items-center text-[8px] text-gray-500 border-b border-gray-200 pb-1 mb-4">
+                        <div><span class="font-bold">Laporan Capaian Pembelajaran PG-TK</span></div>
+                        <div>Nama: <strong x-text="siswa.nama_lengkap"></strong> | Kelas: <span
+                                x-text="siswa.kelas_id"></span></div>
+                        <div>Semester: <span x-text="semester"></span> | TA: 2024/2025</div>
+                    </div>
+                </template>
+
+                <!-- Judul Kategori / Elemen -->
+                <h3 class="bg-indigo-900 p-2.5 font-bold text-white text-[10px] mb-4 rounded-lg tracking-wide uppercase"
+                    x-text="getCategoryTitle(cat)"></h3>
+
+                <!-- Table Checklist -->
+                <div class="mb-4 overflow-x-auto">
+                    <!-- General Scale Table (BB, MB, BSH, BSB) -->
+                    <template x-if="!isEnglishScale(cat)">
+                        <table class="w-full border-collapse border border-gray-300 bg-white"
+                               :class="getIndicatorsFor(cat).length > 12 ? 'compact-table' : 'normal-table'">
+                            <thead>
+                                <tr class="bg-gray-50 text-center font-bold text-gray-700">
+                                    <th class="border border-gray-300 w-8">No</th>
+                                    <th class="border border-gray-300 text-left">Indikator / Tujuan Pembelajaran</th>
+                                    <th class="border border-gray-300 w-10">BB</th>
+                                    <th class="border border-gray-300 w-10">MB</th>
+                                    <th class="border border-gray-300 w-10">BSH</th>
+                                    <th class="border border-gray-300 w-10">BSB</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, itemIdx) in getIndicatorsFor(cat)" :key="item.id_iktp">
+                                    <tr class="hover:bg-gray-50/30">
+                                        <td class="border border-gray-300 text-center font-semibold text-gray-500"
+                                            x-text="itemIdx + 1"></td>
+                                        <td class="border border-gray-300 text-gray-800">
+                                            <div class="indicator-title" x-text="item.indikator || item.id_iktp"></div>
+                                            <template x-if="item.tujuan_pembelajaran && item.tujuan_pembelajaran.trim() !== ''">
+                                                <div class="text-[6.5px] text-gray-400 mt-0.5 leading-tight" x-text="item.tujuan_pembelajaran"></div>
+                                            </template>
+                                        </td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-red-600"
+                                            x-text="getRating(item.id_iktp) === 'BB' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-amber-500"
+                                            x-text="getRating(item.id_iktp) === 'MB' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-green-500"
+                                            x-text="getRating(item.id_iktp) === 'BSH' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-green-700"
+                                            x-text="getRating(item.id_iktp) === 'BSB' ? '✓' : ''"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="getIndicatorsFor(cat).length === 0">
+                                    <tr>
+                                        <td colspan="6"
+                                            class="border border-gray-300 p-3 text-center text-gray-400 italic">Belum
+                                            ada indikator checklist yang terisi.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+
+                    <!-- English/Math/Science Scale Table (NI, G, E) -->
+                    <template x-if="isEnglishScale(cat)">
+                        <table class="w-full border-collapse border border-gray-300 bg-white"
+                               :class="getIndicatorsFor(cat).length > 12 ? 'compact-table' : 'normal-table'">
+                            <thead>
+                                <tr class="bg-gray-50 text-center font-bold text-gray-700">
+                                    <th class="border border-gray-300 w-8">No</th>
+                                    <th class="border border-gray-300 text-left">Skills</th>
+                                    <th class="border border-gray-300 w-24">Need Improvement</th>
+                                    <th class="border border-gray-300 w-20">Good</th>
+                                    <th class="border border-gray-300 w-20">Excellent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, itemIdx) in getIndicatorsFor(cat)" :key="item.id_iktp">
+                                    <tr class="hover:bg-gray-50/30">
+                                        <td class="border border-gray-300 text-center font-semibold text-gray-500"
+                                            x-text="itemIdx + 1"></td>
+                                        <td class="border border-gray-300 text-gray-800">
+                                            <div class="indicator-title" x-text="item.indikator || item.id_iktp"></div>
+                                            <template x-if="item.tujuan_pembelajaran && item.tujuan_pembelajaran.trim() !== ''">
+                                                <div class="text-[6.5px] text-gray-400 mt-0.5 leading-tight" x-text="item.tujuan_pembelajaran"></div>
+                                            </template>
+                                        </td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-orange-600"
+                                            x-text="getRating(item.id_iktp) === 'NI' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-blue-600"
+                                            x-text="getRating(item.id_iktp) === 'G' ? '✓' : ''"></td>
+                                        <td class="border border-gray-300 text-center text-xs font-bold text-green-600"
+                                            x-text="getRating(item.id_iktp) === 'E' ? '✓' : ''"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="getIndicatorsFor(cat).length === 0">
+                                    <tr>
+                                        <td colspan="5"
+                                            class="border border-gray-300 p-3 text-center text-gray-400 italic">Belum
+                                            ada indikator checklist yang terisi.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                </div>
+
+                <!-- Narasi / Deskripsi Box (Solid bg-white to block watermark behind text) -->
+                <div class="flex flex-col gap-3 mt-4 border border-gray-200 p-4 rounded-xl bg-white shadow-sm">
+                    <div class="flex gap-6 items-start">
+                        <div class="flex-1">
+                            <div class="text-[10px] font-bold text-gray-800 mb-1">DESKRIPSI RAPOR / NARRATIVE:</div>
+                            <div class="text-[10px] leading-relaxed text-justify italic text-gray-600 font-medium whitespace-pre-wrap font-sans"
+                                x-text="localNarratives[cat]">
+                            </div>
+                        </div>
+                        <div
+                            class="w-40 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-300 flex-shrink-0">
+                            <template x-if="localPhotos[cat]">
+                                <img :src="localPhotos[cat]" class="w-full h-full object-cover">
+                            </template>
+                            <template x-if="!localPhotos[cat]">
+                                <div class="text-[9px] text-gray-400 select-none">[ Foto Kegiatan ]</div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TTD (Hanya Ditampilkan di Halaman Terakhir / Science) -->
+                <template x-if="idx === 7">
+                    <div class="flex justify-between mt-12 text-xs text-center border-t border-gray-200 pt-6">
+                        <div class="w-1/3">
+                            <p>Mengetahui,<br>Orang Tua/Wali</p><br><br><br>
+                            <p class="font-bold underline">( ....................... )</p>
+                        </div>
+                        <div class="w-1/3">
+                            <p>Bogor, <span
+                                    x-text="new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})"></span><br>Guru
+                                Kelas</p><br><br><br>
+                            <p class="font-bold underline">Ustadz/ah .................</p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Edit Control Box (Hidden in Print, Outside of A4 Page Card) -->
+            <div class="p-4 bg-white border border-gray-200 rounded-xl shadow-sm no-print max-w-[210mm] mx-auto mb-12 mt-2 flex flex-col gap-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-indigo-900 uppercase tracking-wide">Edit Narasi & Foto (<span x-text="cat"></span>)</span>
+                    <button @click="generateAINarrative(cat)" :disabled="aiLoading[cat]"
+                        class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 shadow-sm">
+                        <span x-show="!aiLoading[cat]">✨ Generate AI Narrative</span>
+                        <span x-show="aiLoading[cat]" class="animate-pulse">Menyusun Narasi...</span>
+                    </button>
+                </div>
+
+                <textarea x-model="localNarratives[cat]" @change="saveNarasi(cat)"
+                    class="w-full p-2.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50/50"
+                    rows="3" placeholder="Tulis deskripsi perkembangan di sini..."></textarea>
+
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-500 font-bold mb-1">Unggah Foto Kegiatan:</label>
+                        <input type="file" @change="uploadPhoto($event, cat)" accept="image/*"
+                            class="w-full text-xs text-gray-500 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    </div>
+                    <div class="flex-shrink-0" x-show="localPhotos[cat]">
+                        <button @click="localPhotos[cat] = ''; saveNarasi(cat);"
+                            class="bg-rose-50 text-rose-600 text-xs px-2.5 py-1 rounded-md font-bold hover:bg-rose-100 transition-colors border border-rose-100">
+                            Hapus Foto
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </div> <!-- Closes wrapper div -->
+        </template>
+    </div>
+</div>
+
+<script>
+    if (typeof tkReportView === 'undefined') {
+        function tkReportView() {
+            return {
+                listSiswa: [],
+                searchNis: '',
+                semester: '1',
+                filterKelas: '',
+                loading: false,
+                reportReady: false,
+                siswa: {},
+                dataRapor: { narasi: [], checklist: [] },
+
+                init() {
+                    this.loadSiswa();
+                },
+
+                loadSiswa() {
+                    google.script.run.withSuccessHandler(res => {
+                        this.listSiswa = res?.data || [];
+                    }).apiCall('getSiswa');
+                },
+
+                get listSiswaFiltered() {
+                    return this.listSiswa.filter(s => {
+                        if (this.filterKelas) {
+                            const targetK = this.filterKelas.toUpperCase();
+                            const sK = (s.kelas_id || '').toUpperCase();
+                            if (targetK === 'PLAYGROUP' && !(sK.includes('PLAYGROUP') || sK === 'PG')) return false;
+                            if (targetK !== 'PLAYGROUP' && !sK.includes(targetK)) return false;
+                        }
+                        return true;
+                    });
+                },
+
+                getAssignedWali(kelasId) {
+                    const c = (kelasId || '').toUpperCase();
+                    if (c.includes('PLAYGROUP') || c === 'PG') return 'Bu Nurlaela';
+                    if (c === 'TK A') return 'Ustadzah Dian / Sahla';
+                    if (c === 'TK B') return 'Ustadzah Nur Hikmah / Halizah / Muttia';
+                    return '-';
+                },
+
+                // Local inputs for narrative editor
+                localNarratives: {},
+                localPhotos: {},
+                aiLoading: {},
+
+                // Google Drive Direct Link Backgrounds (Placeholders)
+                // Ganti 'MASUKKAN_ID_FILE_1_DISINI' dengan ID file gambar Anda dari Google Drive
+                bgImages: [
+                    'https://lh3.googleusercontent.com/d/1aeMhaJhIsROMLVZ-gu09P2FuGlwITGC2', // Gambar 1 (Toys / Mainan)
+                    'https://lh3.googleusercontent.com/d/1MYyq5HOG9ZBVpdfXbb5xQQ-z2ngvHPtd', // Gambar 2 (Bricks / Balok)
+                    'https://lh3.googleusercontent.com/d/1c-K0bZKt4eqQbbrF4d-SEQ91UNUn5hB9', // Gambar 3 (Pencils / Pensil)
+                ],
+
+                getBgStyle(idx) {
+                    const bgUrl = this.bgImages[idx % this.bgImages.length];
+                    if (bgUrl.includes('MASUKKAN_ID_FILE_')) {
+                        return 'background-color: #ffffff;'; // Fallback ke warna putih jika belum diset
+                    }
+                    return `background-image: url('${bgUrl}'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;`;
+                },
+
+                generatePreview() {
+                    if (!this.searchNis) return alert("Pilih Siswa!");
+                    this.loading = true;
+                    google.script.run.withSuccessHandler(res => {
+                        this.siswa = (res?.data || []).find(s => String(s.nis).trim() === String(this.searchNis).trim());
+                        if (!this.siswa) return (alert("Siswa tidak ditemukan!"), this.loading = false);
+
+                        google.script.run.withSuccessHandler(rep => {
+                            this.dataRapor = rep.data;
+
+                            // Initialize local narratives and photos
+                            this.localNarratives = {};
+                            this.localPhotos = {};
+                            this.aiLoading = {};
+
+                            ['Agama', 'Jati Diri', 'Literasi & STEAM', 'Kokurikuler', 'Diniyah', 'English', 'Math', 'Science'].forEach(cat => {
+                                const fullLabel = this.getCategoryFullLabel(cat);
+                                const existing = this.dataRapor.narasi.find(n => n.elemen === fullLabel);
+                                this.localNarratives[cat] = existing ? existing.teks_narasi : 'Alhamdulillah, Ananda menunjukkan perkembangan yang baik pada elemen ini. Selengkapnya akan dibahas saat konsultasi orang tua.';
+                                this.localPhotos[cat] = existing ? existing.foto_url : '';
+                                this.aiLoading[cat] = false;
+                            });
+
+                            this.reportReady = true;
+                            this.loading = false;
+                        }).apiCall('getReportTK', JSON.stringify({ nis: this.searchNis, semester: this.semester }));
+                    }).apiCall('getSiswa');
+                },
+
+                generateAINarrative(cat) {
+                    this.aiLoading[cat] = true;
+                    const fullLabel = this.getCategoryFullLabel(cat);
+
+                    // Compile indicators and ratings
+                    const listIndicators = this.getIndicatorsFor(cat);
+                    const listRatings = listIndicators.map(i => ({
+                        indikator: i.indikator || i.id_iktp,
+                        nilai: this.getRating(i.id_iktp) || 'MB'
+                    }));
+
+                    google.script.run.withSuccessHandler(res => {
+                        this.aiLoading[cat] = false;
+                        if (res && res.status && res.data) {
+                            this.localNarratives[cat] = res.data;
+                            this.saveNarasi(cat);
+                        } else {
+                            alert("Gagal memproses AI: " + (res?.message || "Error"));
+                        }
+                    }).apiCall('genAI', JSON.stringify({
+                        nama: this.siswa.nama_lengkap,
+                        gender: this.siswa.jenis_kelamin,
+                        elemen: fullLabel,
+                        list_iktp: listRatings
+                    }));
+                },
+
+                uploadPhoto(e, cat) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        google.script.run.withSuccessHandler(res => {
+                            if (res && res.status && res.data && res.data.url) {
+                                this.localPhotos[cat] = res.data.url;
+                                this.saveNarasi(cat);
+                            } else {
+                                alert("Gagal mengunggah foto: " + (res?.message || "Error"));
+                            }
+                        }).apiCall('uploadFile', JSON.stringify({
+                            base64: event.target.result,
+                            fileName: `rapor_${this.searchNis}_${cat.replace(/\s+/g, '_')}_${file.name}`
+                        }));
+                    };
+                    reader.readAsDataURL(file);
+                },
+
+                saveNarasi(cat) {
+                    google.script.run.withSuccessHandler(res => {
+                        // Success silently
+                    }).apiCall('saveTK', JSON.stringify({
+                        nis: this.searchNis,
+                        semester: this.semester,
+                        elemen: this.getCategoryFullLabel(cat),
+                        teks_narasi: this.localNarratives[cat],
+                        foto_url: this.localPhotos[cat]
+                    }));
+                },
+
+                getCategoryTitle(cat) {
+                    const maps = {
+                        'Agama': 'NILAI AGAMA DAN BUDI PEKERTI',
+                        'Jati Diri': 'JATI DIRI',
+                        'Literasi & STEAM': 'DASAR LITERASI, MATEMATIKA, SAINS, TEKNOLOGI, REKAYASA, DAN SENI (STEAM)',
+                        'Kokurikuler': 'KATEGORI PENILAIAN KOKURIKULER / DIMENSI PROFIL LULUSAN',
+                        'Diniyah': 'LAPORAN PERKEMBANGAN DINIYYAH',
+                        'English': 'ENGLISH AS A SECOND LANGUAGE PROGRAM',
+                        'Math': 'MATHEMATIC',
+                        'Science': 'SCIENCE'
+                    };
+                    return maps[cat] || cat.toUpperCase();
+                },
+
+                isEnglishScale(cat) {
+                    return ['English', 'Math', 'Science'].includes(cat);
+                },
+
+                getCategoryFullLabel(cat) {
+                    const maps = {
+                        'Agama': 'Nilai Agama & Budi Pekerti',
+                        'Jati Diri': 'Jati Diri',
+                        'Literasi & STEAM': 'Dasar Literasi & STEAM',
+                        'Kokurikuler': 'Kokurikuler / Dimensi Profil Lulusan',
+                        'Diniyah': 'Laporan Perkembangan Diniyyah',
+                        'English': 'ESL English Program',
+                        'Math': 'Mathematic',
+                        'Science': 'Science'
+                    };
+                    return maps[cat] || cat;
+                },
+
+                getIndicatorsFor(cat) {
+                    if (!this.dataRapor.iktp) return [];
+                    const targetElemen = this.getCategoryFullLabel(cat).trim().toLowerCase();
+                    return this.dataRapor.iktp.filter(i => {
+                        const itemElemen = String(i.elemen || '').trim().toLowerCase();
+                        if (itemElemen !== targetElemen) return false;
+                        const sClass = this.siswa.kelas_id || '';
+                        const itemKelas = i.kelas || i.tujuan_pembelajaran || '';
+                        return !itemKelas || itemKelas.trim() === '' || sClass.toUpperCase().includes(itemKelas.toUpperCase());
+                    });
+                },
+
+                getRating(idIktp) {
+                    if (!this.dataRapor.checklist) return '';
+                    const r = this.dataRapor.checklist.find(d => d.id_iktp === idIktp);
+                    return r ? r.nilai : '';
+                },
+
+                getNarasi(cat) {
+                    if (!this.dataRapor.narasi) return null;
+                    let n = this.dataRapor.narasi.find(i => i.elemen === cat);
+                    if (n) return n.teks_narasi;
+                    const firstWord = cat.toLowerCase().split(' ')[0];
+                    n = this.dataRapor.narasi.find(i => i.elemen.toLowerCase().includes(firstWord));
+                    return n ? n.teks_narasi : null;
+                }
+            }
+        }
+    }
+</script>

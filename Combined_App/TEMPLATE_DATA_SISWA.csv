@@ -1,0 +1,8 @@
+nis,nisn,nama_lengkap,kelas_id,jenis_kelamin,tempat_lahir,tanggal_lahir,nama_ayah,password_wali,wali_kelas
+24001,0012021001,Abdullah bin Umar,Playgroup,L,Bogor,2021-03-15,Umar Faruq,wali24001,Bu Nurlaela
+24002,0012021002,Khadijah Al-Kubro,Playgroup,P,Jakarta,2021-05-20,Ahmad Fauzi,wali24002,Bu Nurlaela
+24003,0012020001,Muhammad Al-Fatih,TK A,L,Depok,2020-01-10,Ridwan Malik,wali24003,Ustadzah Dian
+24004,0012020002,Aisyah Humaira,TK A,P,Bogor,2020-04-12,Zulkifli,wali24004,Ustadzah Sahla
+24005,0012019001,Zaid bin Haritsah,TK B,L,Jakarta,2019-06-25,Harits,wali24005,Ustadzah Nur Hikmah
+24006,0012019002,Fathimah Az-Zahra,TK B,P,Bekasi,2019-08-18,Ali Usman,wali24006,Ustadzah Halizah
+24007,0012019003,Thoriq bin Ziyad,TK B,L,Bogor,2019-11-03,Ziyad,wali24007,Ustadzah Muttia Ghina
