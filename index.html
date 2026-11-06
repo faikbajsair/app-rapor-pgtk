@@ -252,30 +252,30 @@
             <!-- Navigation Links -->
             <nav class="flex-grow overflow-y-auto p-4 space-y-1.5 custom-scrollbar text-xs font-bold">
                 
-                <!-- Beranda / Dashboard -->
-                <a @click="view='dash'" 
-                   class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                   :class="view=='dash' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
-                   <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                   <span>Dashboard Terpadu</span>
-                </a>
+                <!-- Navigasi Guru / Admin (Hanya Tampil Saat Login Guru / Staf) -->
+                <div x-show="user.role !== 'WALI'" class="space-y-1.5">
+                    <!-- Beranda / Dashboard Guru -->
+                    <a @click="view='dash'" 
+                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='dash' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                       <span>Dashboard Terpadu</span>
+                    </a>
 
-                <!-- Observasi Psikologi Bulanan & PSB (FITUR UTAMA) -->
-                <a @click="view='tk_psiko'" 
-                   class="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer"
-                   :class="view=='tk_psiko' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
-                   <div class="flex items-center gap-3">
-                       <i data-lucide="brain" class="w-4 h-4 text-amber-400"></i>
-                       <span>Observasi Psikologi (ASQ-3)</span>
-                   </div>
-                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                         :class="view=='tk_psiko' ? 'bg-white text-emerald-800' : 'bg-emerald-100 text-emerald-800'">
-                       26 Berkas
-                   </span>
-                </a>
+                    <!-- Observasi Psikologi Bulanan & PSB (FITUR UTAMA GURU) -->
+                    <a @click="view='tk_psiko'" 
+                       class="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='tk_psiko' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <div class="flex items-center gap-3">
+                           <i data-lucide="brain" class="w-4 h-4 text-amber-400"></i>
+                           <span>Observasi Psikologi (ASQ-3)</span>
+                       </div>
+                       <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                             :class="view=='tk_psiko' ? 'bg-white text-emerald-800' : 'bg-emerald-100 text-emerald-800'">
+                           26 Berkas
+                       </span>
+                    </a>
 
-                <!-- Navigasi Guru / Admin -->
-                <div x-show="user.role !== 'WALI'">
                     <div class="pt-4 pb-1.5 px-3 text-[10px] uppercase text-slate-400 font-extrabold tracking-wider">Penilaian PG-TK</div>
                     
                     <a @click="view='tk_in'" 
@@ -358,8 +358,9 @@
                     </a>
                 </div>
 
-                <div x-show="user.role === 'WALI'">
-                    <div class="pt-4 pb-1.5 px-3 text-[10px] uppercase text-slate-400 font-extrabold tracking-wider">Portal Wali Murid</div>
+                <!-- Navigasi Khusus Portal Wali Murid (Tunggal & Tidak Ada Menu Ganda) -->
+                <div x-show="user.role === 'WALI'" class="space-y-1.5">
+                    <div class="pt-2 pb-1.5 px-3 text-[10px] uppercase text-slate-400 font-extrabold tracking-wider">Portal Wali Murid</div>
 
                     <a @click="view='dash'" 
                        class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
@@ -440,14 +441,14 @@
                 </div>
 
                 <div class="flex items-center gap-2.5">
-                    <a href="https://drive.google.com/drive/folders/196Jy3X2cUtwfIAHVRu-koxTqmHnDgyCZ?usp=sharing" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold shadow-xs transition-all">
+                    <a x-show="user.role !== 'WALI'" href="https://drive.google.com/drive/folders/196Jy3X2cUtwfIAHVRu-koxTqmHnDgyCZ?usp=sharing" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold shadow-xs transition-all">
                         <i data-lucide="folder" class="w-3.5 h-3.5 text-amber-600"></i>
                         <span>Folder GDrive PSB ↗</span>
                     </a>
 
                     <button @click="view='tk_psiko'" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
                         <i data-lucide="brain" class="w-3.5 h-3.5"></i>
-                        <span class="hidden sm:inline">Laporan Psikologi</span>
+                        <span class="hidden sm:inline" x-text="user.role === 'WALI' ? 'Hasil Psikotes Ananda' : 'Laporan Psikologi'"></span>
                         <span class="sm:hidden">Psikologi</span>
                     </button>
 
@@ -898,7 +899,8 @@
                                 </p>
                             </div>
 
-                            <div class="flex flex-wrap lg:flex-col items-stretch sm:items-end gap-2 flex-shrink-0">
+                            <!-- Tombol Aksi Hero (Guru: Folder GDrive, Wali: Dokumen Ananda) -->
+                            <div x-show="user.role !== 'WALI'" class="flex flex-wrap lg:flex-col items-stretch sm:items-end gap-2 flex-shrink-0">
                                 <a href="https://drive.google.com/drive/folders/196Jy3X2cUtwfIAHVRu-koxTqmHnDgyCZ?usp=sharing" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg">
                                     <i data-lucide="folder" class="w-4 h-4"></i> Buka Folder Utama GDrive ↗
                                 </a>
@@ -911,11 +913,23 @@
                                     </span>
                                 </div>
                             </div>
+
+                            <div x-show="user.role === 'WALI'" class="flex flex-col items-start sm:items-end gap-2 flex-shrink-0">
+                                <div class="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold flex items-center gap-2">
+                                    <span>👨‍👩‍👧 Wali Murid Ananda:</span>
+                                    <span class="text-white font-extrabold" x-text="curPsikoStudent()?.nama_lengkap"></span>
+                                </div>
+                                <template x-if="curPsikoStudent()?.hasDriveFile">
+                                    <a :href="curPsikoStudent()?.driveViewUrl" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md">
+                                        <i data-lucide="file-text" class="w-4 h-4"></i> Dokumen Psikotes Asli Ananda ↗
+                                    </a>
+                                </template>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Filter & Search Bar -->
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs">
+                    <!-- Filter & Search Bar (Khusus Guru / Admin) -->
+                    <div x-show="user.role !== 'WALI'" class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs">
                         <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar text-xs font-bold">
                             <button @click="psikoFilter='all'" :class="psikoFilter==='all' ? 'pill-active' : 'pill-inactive'" class="px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer">
                                 Semua Siswa (<span x-text="listSiswa.length"></span>)
@@ -937,8 +951,8 @@
                     <!-- Master Layout: List + Detail -->
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         
-                        <!-- Left: Student Selector -->
-                        <div class="lg:col-span-4 space-y-3">
+                        <!-- Left: Student Selector (Khusus Guru / Admin) -->
+                        <div x-show="user.role !== 'WALI'" class="lg:col-span-4 space-y-3">
                             <div class="flex items-center justify-between px-1">
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Pilih Siswa:</h3>
                                 <span class="text-[11px] text-slate-400" x-text="filteredPsikoStudents.length + ' Siswa'"></span>
@@ -975,9 +989,9 @@
                             </div>
                         </div>
 
-                        <!-- Right: Detailed Student Psychology Card -->
-                        <div class="lg:col-span-8 space-y-6">
-                            <template x-if="selectedPsikoStudent">
+                        <!-- Right: Detailed Student Psychology Card (Full Width untuk Wali Murid) -->
+                        <div :class="user.role === 'WALI' ? 'lg:col-span-12' : 'lg:col-span-8'" class="space-y-6">
+                            <template x-if="curPsikoStudent()">
                                 <div class="space-y-6">
                                     
                                     <!-- Profile Hero -->
@@ -1013,8 +1027,12 @@
                                                     </div>
                                                 </template>
                                                 
-                                                <button type="button" @click="sharePsychologyWA(selectedPsikoStudent)" class="px-4 py-2 rounded-xl bg-green-50 hover:bg-green-100 text-green-800 border border-green-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                                                <button x-show="user.role !== 'WALI'" type="button" @click="sharePsychologyWA(selectedPsikoStudent)" class="px-4 py-2 rounded-xl bg-green-50 hover:bg-green-100 text-green-800 border border-green-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                                                     <i data-lucide="share-2" class="w-3.5 h-3.5 text-green-600"></i> Kirim ke WhatsApp Ortu
+                                                </button>
+
+                                                <button x-show="user.role === 'WALI'" type="button" @click="view='tk_out'" class="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                                                    <i data-lucide="printer" class="w-3.5 h-3.5 text-emerald-600"></i> Lihat / Unduh Cetak Rapor
                                                 </button>
                                             </div>
                                         </div>
@@ -1168,7 +1186,7 @@
                                                 <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
                                                     <i data-lucide="clipboard-list" class="w-4 h-4 text-emerald-600"></i> Observasi Bulanan Guru
                                                 </h4>
-                                                <button @click="openAddObsPsikoModal()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold cursor-pointer">
+                                                <button x-show="user.role !== 'WALI'" @click="openAddObsPsikoModal()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold cursor-pointer">
                                                     + Tambah Catatan
                                                 </button>
                                             </div>
@@ -2336,7 +2354,8 @@
 
     <!-- FLOATING MOBILE BOTTOM NAVIGATION BAR (1-THUMB NAVIGATION) -->
     <nav class="mobile-bottom-bar lg:hidden">
-        <div class="max-w-md mx-auto grid grid-cols-5 gap-1 px-2 pt-2 text-center">
+        <!-- Bottom Nav Khusus Guru / Admin -->
+        <div x-show="user.role !== 'WALI'" class="max-w-md mx-auto grid grid-cols-5 gap-1 px-2 pt-2 text-center">
             <button @click="view='dash'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='dash' ? 'text-emerald-700 font-black' : 'text-slate-500'">
                 <i data-lucide="home" class="w-5 h-5"></i>
                 <span class="text-[9px] mt-1 font-bold">Beranda</span>
@@ -2356,6 +2375,30 @@
             <button @click="view='tk_out'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='tk_out' ? 'text-emerald-700 font-black' : 'text-slate-500'">
                 <i data-lucide="printer" class="w-5 h-5"></i>
                 <span class="text-[9px] mt-1 font-bold">Rapor A4</span>
+            </button>
+        </div>
+
+        <!-- Bottom Nav Khusus Wali Murid -->
+        <div x-show="user.role === 'WALI'" class="max-w-md mx-auto grid grid-cols-5 gap-1 px-2 pt-2 text-center">
+            <button @click="view='dash'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='dash' ? 'text-emerald-700 font-black' : 'text-slate-500'">
+                <i data-lucide="heart" class="w-5 h-5"></i>
+                <span class="text-[9px] mt-1 font-bold">Rapor</span>
+            </button>
+            <button @click="view='tk_psiko'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='tk_psiko' ? 'text-emerald-700 font-black' : 'text-slate-500'">
+                <i data-lucide="brain" class="w-5 h-5"></i>
+                <span class="text-[9px] mt-1 font-bold">Psikotes</span>
+            </button>
+            <button @click="view='diniyyah'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='diniyyah' ? 'text-emerald-700 font-black' : 'text-slate-500'">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                <span class="text-[9px] mt-1 font-bold">Hafalan</span>
+            </button>
+            <button @click="view='kms'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='kms' ? 'text-rose-600 font-black' : 'text-slate-500'">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+                <span class="text-[9px] mt-1 font-bold">KMS Fisik</span>
+            </button>
+            <button @click="view='tk_out'" class="flex flex-col items-center justify-center py-1 cursor-pointer" :class="view==='tk_out' ? 'text-purple-600 font-black' : 'text-slate-500'">
+                <i data-lucide="printer" class="w-5 h-5"></i>
+                <span class="text-[9px] mt-1 font-bold">Cetak</span>
             </button>
         </div>
     </nav>
@@ -2746,6 +2789,23 @@
                     const driveText = s.hasDriveFile ? '📄 Dokumen Psikotes Resmi (GDrive): ' + s.driveViewUrl : '⏳ Dokumen Psikotes: Dalam proses sinkronisasi sekolah.';
                     const msg = `Assalamu'alaikum Warahmatullahi Wabarakatuh,\n\nYth. Ayah & Bunda dari Ananda *${s.nama_lengkap}*,\n\nBerikut ringkasan hasil observasi psikologi & diagnostik tumbuh kembang ananda di *TK & Playgroup Al-Imam Islamic School*:\n\n🌟 *Status Perkembangan*: ${s.statusLabel}\n👩‍⚕️ *Pemeriksa*: Aviva Lutfiana, M.Psi., Psikolog (SIPP : 20231686-2024-3451)\n\n💖 *Catatan untuk Ayah & Bunda*:\n"${s.parentAffirmation}"\n\n${driveText}\n\nSemoga ananda senantiasa tumbuh sehat, berakhlak mulia, dan ceria bersama kami.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh,\n*Tim Guru TK & PG Al-Imam Islamic School*`;
                     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+                },
+
+                curDiniyyahStudent() {
+                    const nis = (this.user && this.user.role === 'WALI' && this.user.nis) ? this.user.nis : this.diniyyahNis;
+                    return this.listSiswa.find(s => String(s.nis).trim() === String(nis).trim()) || this.listSiswa[0];
+                },
+
+                curKmsStudent() {
+                    const nis = (this.user && this.user.role === 'WALI' && this.user.nis) ? this.user.nis : this.kmsNis;
+                    return this.listSiswa.find(s => String(s.nis).trim() === String(nis).trim()) || this.listSiswa[0];
+                },
+
+                curPsikoStudent() {
+                    if (this.user && this.user.role === 'WALI' && this.user.nis) {
+                        return this.listSiswa.find(s => String(s.nis).trim() === String(this.user.nis).trim()) || this.selectedPsikoStudent || this.listSiswa[0];
+                    }
+                    return this.selectedPsikoStudent || this.listSiswa[0];
                 }
             }
         }
