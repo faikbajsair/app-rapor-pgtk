@@ -278,50 +278,6 @@
                 <div x-show="user.role !== 'WALI'">
                     <div class="pt-4 pb-1.5 px-3 text-[10px] uppercase text-slate-400 font-extrabold tracking-wider">Penilaian PG-TK</div>
                     
-                    <!-- Jurnal Anekdot & Mood (BARU) -->
-                    <a @click="view='jurnal'" 
-                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                       :class="view=='jurnal' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
-                       <i data-lucide="smile" class="w-4 h-4 text-amber-500"></i>
-                       <div class="flex items-center justify-between w-full">
-                           <span>Jurnal Anekdot & Mood</span>
-                           <span class="px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-800 text-[9px] font-black uppercase">Baru</span>
-                       </div>
-                    </a>
-
-                    <!-- Tracker Mutaba'ah Diniyyah (BARU) -->
-                    <a @click="view='diniyyah'" 
-                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                       :class="view=='diniyyah' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
-                       <i data-lucide="book-open" class="w-4 h-4 text-emerald-600"></i>
-                       <div class="flex items-center justify-between w-full">
-                           <span>Mutaba'ah Diniyyah</span>
-                           <span class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase">Juz 30</span>
-                       </div>
-                    </a>
-
-                    <!-- KMS & Pertumbuhan Fisik (BARU) -->
-                    <a @click="view='kms'" 
-                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                       :class="view=='kms' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
-                       <i data-lucide="activity" class="w-4 h-4 text-rose-500"></i>
-                       <div class="flex items-center justify-between w-full">
-                           <span>KMS & Fisik Anak</span>
-                           <span class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-800 text-[9px] font-black uppercase">WHO</span>
-                       </div>
-                    </a>
-
-                    <!-- Portofolio Karya Anak (BARU) -->
-                    <a @click="view='portofolio'" 
-                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                       :class="view=='portofolio' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
-                       <i data-lucide="palette" class="w-4 h-4 text-purple-500"></i>
-                       <div class="flex items-center justify-between w-full">
-                           <span>Portofolio & Karya</span>
-                           <span class="px-1.5 py-0.2 rounded-md bg-purple-100 text-purple-800 text-[9px] font-black uppercase">Galeri</span>
-                       </div>
-                    </a>
-
                     <a @click="view='tk_in'" 
                        class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
                        :class="view=='tk_in' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
@@ -336,28 +292,44 @@
                        <span>Checklist IKTP (8 Elemen)</span>
                     </a>
 
-                    <!-- Mutaba'ah Diniyyah untuk Wali -->
+                    <a @click="view='jurnal'" 
+                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='jurnal' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <i data-lucide="smile" class="w-4 h-4 text-amber-500"></i>
+                       <div class="flex items-center justify-between w-full">
+                           <span>Jurnal Anekdot & Mood</span>
+                           <span class="px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-800 text-[9px] font-black uppercase">Baru</span>
+                       </div>
+                    </a>
+
                     <a @click="view='diniyyah'" 
                        class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
                        :class="view=='diniyyah' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
                        <i data-lucide="book-open" class="w-4 h-4 text-emerald-600"></i>
-                       <span>Hafalan & Doa Ananda</span>
+                       <div class="flex items-center justify-between w-full">
+                           <span>Mutaba'ah Diniyyah</span>
+                           <span class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase">Juz 30</span>
+                       </div>
                     </a>
 
-                    <!-- KMS Fisik untuk Wali -->
                     <a @click="view='kms'" 
                        class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
                        :class="view=='kms' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
                        <i data-lucide="activity" class="w-4 h-4 text-rose-500"></i>
-                       <span>KMS & Pertumbuhan Fisik</span>
+                       <div class="flex items-center justify-between w-full">
+                           <span>KMS & Fisik Anak</span>
+                           <span class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-800 text-[9px] font-black uppercase">WHO</span>
+                       </div>
                     </a>
 
-                    <!-- Portofolio Karya untuk Wali -->
                     <a @click="view='portofolio'" 
                        class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
                        :class="view=='portofolio' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
                        <i data-lucide="palette" class="w-4 h-4 text-purple-500"></i>
-                       <span>Galeri Karya Ananda</span>
+                       <div class="flex items-center justify-between w-full">
+                           <span>Portofolio & Karya</span>
+                           <span class="px-1.5 py-0.2 rounded-md bg-purple-100 text-purple-800 text-[9px] font-black uppercase">Galeri</span>
+                       </div>
                     </a>
 
                     <a @click="view='tk_out'" 
@@ -386,15 +358,42 @@
                     </a>
                 </div>
 
-                <!-- Navigasi Khusus Wali Murid -->
                 <div x-show="user.role === 'WALI'">
                     <div class="pt-4 pb-1.5 px-3 text-[10px] uppercase text-slate-400 font-extrabold tracking-wider">Portal Wali Murid</div>
 
-                    <a @click="view='wali_dash'" 
+                    <a @click="view='dash'" 
                        class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                       :class="view=='wali_dash' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       :class="view=='dash' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
                        <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
                        <span>Rapor & Tumbuh Kembang</span>
+                    </a>
+
+                    <a @click="view='tk_psiko'" 
+                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='tk_psiko' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <i data-lucide="brain" class="w-4 h-4 text-amber-500"></i>
+                       <span>Hasil Psikotes ASQ-3</span>
+                    </a>
+
+                    <a @click="view='diniyyah'" 
+                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='diniyyah' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <i data-lucide="book-open" class="w-4 h-4 text-emerald-600"></i>
+                       <span>Hafalan & Doa Ananda</span>
+                    </a>
+
+                    <a @click="view='kms'" 
+                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='kms' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <i data-lucide="activity" class="w-4 h-4 text-rose-500"></i>
+                       <span>KMS & Pertumbuhan Fisik</span>
+                    </a>
+
+                    <a @click="view='portofolio'" 
+                       class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                       :class="view=='portofolio' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-white/80 hover:text-emerald-700'">
+                       <i data-lucide="palette" class="w-4 h-4 text-purple-500"></i>
+                       <span>Galeri Karya Ananda</span>
                     </a>
 
                     <a @click="view='tk_out'" 
@@ -404,7 +403,6 @@
                        <span>Cetak / Unduh Rapor</span>
                     </a>
                 </div>
-
             </nav>
 
             <!-- User Footer Card -->
@@ -757,7 +755,7 @@
                             <!-- PROGRESS BAR KELENGKAPAN RAPOR PER KELAS & ALERT KESIAPAN -->
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <!-- Progress Kelengkapan -->
-                                <div class="bento-card p-6 space-y-4 lg:col-span-2">
+                                <div class="bento-card p-6 space-y-4" :class="user.role === 'WALI' ? 'lg:col-span-3' : 'lg:col-span-2'">
                                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                                         <div>
                                             <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1389,7 +1387,10 @@
 
                         <!-- Selector Siswa -->
                         <div class="flex items-center gap-2">
-                            <select x-model="diniyyahNis" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 outline-none">
+                            <div x-show="user.role === 'WALI'" class="px-3.5 py-2 bg-emerald-100 text-emerald-950 rounded-xl text-xs font-bold">
+                                <span>Ananda: </span><strong x-text="curDiniyyahStudent()?.nama_lengkap"></strong>
+                            </div>
+                            <select x-show="user.role !== 'WALI'" x-model="diniyyahNis" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 outline-none">
                                 <template x-for="s in listSiswa" :key="s.nis">
                                     <option :value="s.nis" x-text="s.nama_lengkap + ' (' + s.kelas_id + ')'"></option>
                                 </template>
@@ -1522,7 +1523,10 @@
 
                         <!-- Selector Siswa -->
                         <div class="flex items-center gap-2">
-                            <select x-model="kmsNis" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 outline-none">
+                            <div x-show="user.role === 'WALI'" class="px-3.5 py-2 bg-rose-100 text-rose-950 rounded-xl text-xs font-bold">
+                                <span>Ananda: </span><strong x-text="curKmsStudent()?.nama_lengkap"></strong>
+                            </div>
+                            <select x-show="user.role !== 'WALI'" x-model="kmsNis" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 outline-none">
                                 <template x-for="s in listSiswa" :key="s.nis">
                                     <option :value="s.nis" x-text="s.nama_lengkap + ' (' + s.kelas_id + ')'"></option>
                                 </template>
@@ -1564,10 +1568,10 @@
                     <!-- Formulir Update & Riwayat Pengukuran -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Input Pengukuran Baru -->
-                        <div class="bento-card p-6 space-y-4">
+                        <div x-show="user.role !== 'WALI'" class="bento-card p-6 space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                                 <i data-lucide="plus" class="w-4 h-4 text-emerald-600"></i>
-                                Rekam Pengukuran Baru
+                                Rekam Pengukuran Baru (Guru)
                             </h4>
 
                             <div class="space-y-3 text-xs">
