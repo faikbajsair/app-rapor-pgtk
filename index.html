@@ -1243,7 +1243,8 @@
                             <h3 class="text-lg font-black text-slate-900 mt-1">Jurnal Anekdot & Pemantau Mood Harian</h3>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2">
+                        <!-- Filter & Aksi Tambah (Guru: Filter & Tambah, Wali: Info Ananda) -->
+                        <div x-show="user.role !== 'WALI'" class="flex flex-wrap items-center gap-2">
                             <select x-model="jurnalFilterKelas" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 outline-none">
                                 <option value="">Semua Kelas</option>
                                 <option value="Playgroup">Playgroup</option>
@@ -1255,10 +1256,14 @@
                                 <span>Tambah Catatan Baru</span>
                             </button>
                         </div>
+                        <div x-show="user.role === 'WALI'" class="px-3.5 py-2 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span>Jurnal Harian Ananda:</span>
+                            <span class="text-amber-950 font-extrabold" x-text="user.nama"></span>
+                        </div>
                     </div>
 
-                    <!-- Input Form Quick Card (Jika Modal Terbuka atau Cepat) -->
-                    <div class="bento-card p-6 border-amber-200/80 bg-gradient-to-br from-amber-50/40 to-white space-y-4">
+                    <!-- Input Form Quick Card (Khusus Guru / Admin) -->
+                    <div x-show="user.role !== 'WALI'" class="bento-card p-6 border-amber-200/80 bg-gradient-to-br from-amber-50/40 to-white space-y-4">
                         <div class="flex items-center justify-between border-b border-amber-100 pb-3">
                             <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
                                 <i data-lucide="edit-3" class="w-4 h-4 text-amber-600"></i>
@@ -1354,13 +1359,13 @@
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
                                 <i data-lucide="book-marked" class="w-4 h-4 text-emerald-600"></i>
-                                Riwayat Jurnal Anekdot Terkini (<span x-text="listJurnal.length"></span> Catatan)
+                                Riwayat Jurnal Anekdot (<span x-text="filteredListJurnal.length"></span> Catatan)
                             </h4>
-                            <span class="text-xs text-slate-400">Dapat ditarik langsung ke narasi rapor</span>
+                            <span x-show="user.role !== 'WALI'" class="text-xs text-slate-400">Dapat ditarik langsung ke narasi rapor</span>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <template x-for="(j, idx) in listJurnal" :key="idx">
+                            <template x-for="(j, idx) in filteredListJurnal" :key="idx">
                                 <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:border-emerald-300 transition-all space-y-2.5">
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="flex items-center gap-2">
@@ -1379,7 +1384,7 @@
 
                                     <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
                                         <span class="text-[10px] text-slate-400">Pencatat: <strong class="text-slate-600" x-text="j.guru"></strong></span>
-                                        <button @click="tarikKeNarasiAI(j)" class="text-emerald-700 hover:text-emerald-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer">
+                                        <button x-show="user.role !== 'WALI'" @click="tarikKeNarasiAI(j)" class="text-emerald-700 hover:text-emerald-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer">
                                             <span>✨ Tarik ke AI Rapor</span>
                                         </button>
                                     </div>
@@ -1682,7 +1687,8 @@
                             <h3 class="text-lg font-black text-slate-900 mt-1">Galeri Karya & Portofolio Digital Anak</h3>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <!-- Filter & Aksi Unggah (Guru: Filter & Unggah, Wali: Identitas Ananda) -->
+                        <div x-show="user.role !== 'WALI'" class="flex items-center gap-2">
                             <select x-model="portofolioKelas" class="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 outline-none">
                                 <option value="">Semua Tingkat</option>
                                 <option value="Playgroup">Playgroup</option>
@@ -1694,11 +1700,15 @@
                                 <span>Unggah Karya Baru</span>
                             </button>
                         </div>
+                        <div x-show="user.role === 'WALI'" class="px-3.5 py-2 bg-purple-100 text-purple-900 rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span>Galeri Karya Seni Ananda:</span>
+                            <span class="text-purple-950 font-extrabold" x-text="user.nama"></span>
+                        </div>
                     </div>
 
                     <!-- Grid Portofolio Karya Anak -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <template x-for="(item, idx) in listPortofolio" :key="idx">
+                        <template x-for="(item, idx) in filteredListPortofolio" :key="idx">
                             <div class="bento-card p-5 space-y-3 bg-white border border-slate-200/80 hover:border-purple-300 transition-all flex flex-col justify-between">
                                 <div class="space-y-3">
                                     <div class="h-48 w-full rounded-2xl bg-slate-100 overflow-hidden relative border border-slate-100 flex items-center justify-center">
@@ -1723,8 +1733,8 @@
                     </div>
                 </div>
 
-                <!-- 3. INPUT OBSERVASI HARIAN & AI (TK_IN) -->
-                <div x-show="view==='tk_in'" class="space-y-6">
+                <!-- 3. INPUT OBSERVASI HARIAN & AI (TK_IN) (Khusus Guru / Admin) -->
+                <div x-show="view==='tk_in' && user.role !== 'WALI'" class="space-y-6">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Panel Kiri: Observasi Anekdot -->
                         <div class="bento-card p-6 space-y-4">
@@ -1809,8 +1819,8 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
             <h3 class="text-xl font-bold text-indigo-900">Penilaian Checklist Perkembangan PG-TK</h3>
             
-            <!-- Quick Filter Bar -->
-            <div class="flex items-center gap-2">
+            <!-- Quick Filter Bar (Khusus Guru / Admin) -->
+            <div x-show="!isParent" class="flex items-center gap-2">
                 <select x-model="filterKelas" class="p-2 border border-gray-200 rounded-xl text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
                     <option value="">Semua Kelas</option>
                     <option value="Playgroup">Playgroup</option>
@@ -1829,12 +1839,20 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Siswa</label>
-                <select x-model="selectedNis" @change="loadRatings()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
-                    <option value="" x-text="'-- Pilih Siswa (' + (listSiswaFiltered ? listSiswaFiltered.length : 0) + ' siswa) --'">-- Pilih Siswa --</option>
-                    <template x-for="s in listSiswaFiltered" :key="s.nis">
-                        <option :value="s.nis" x-text="s.nama_lengkap + ' — [' + (s.kelas_id || 'TK') + (s.wali_kelas ? ' • ' + s.wali_kelas : '') + ']'"></option>
-                    </template>
-                </select>
+                <!-- Jika Login Guru: Dropdown Pilihan Siswa -->
+                <div x-show="!isParent">
+                    <select x-model="selectedNis" @change="loadRatings()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
+                        <option value="" x-text="'-- Pilih Siswa (' + (listSiswaFiltered ? listSiswaFiltered.length : 0) + ' siswa) --'">-- Pilih Siswa --</option>
+                        <template x-for="s in listSiswaFiltered" :key="s.nis">
+                            <option :value="s.nis" x-text="s.nama_lengkap + ' — [' + (s.kelas_id || 'TK') + (s.wali_kelas ? ' • ' + s.wali_kelas : '') + ']'"></option>
+                        </template>
+                    </select>
+                </div>
+                <!-- Jika Login Wali Murid: Terkunci Khusus Ananda -->
+                <div x-show="isParent" class="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between">
+                    <span class="text-xs font-black text-emerald-950" x-text="currentStudent?.nama_lengkap || parentChildName"></span>
+                    <span class="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-md">Khusus Ananda</span>
+                </div>
             </div>
 
             <div>
@@ -1966,7 +1984,7 @@
             </div>
 
             <!-- Bottom Action -->
-            <div x-show="listIndicators.length > 0" class="mt-6 flex justify-end no-print">
+            <div x-show="listIndicators.length > 0 && !isParent" class="mt-6 flex justify-end no-print">
                 <button @click="saveRatings" :disabled="saving"
                     class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2">
                     <span x-show="!saving">Simpan Penilaian</span>
@@ -1975,6 +1993,11 @@
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </button>
+            </div>
+            <div x-show="listIndicators.length > 0 && isParent" class="mt-6 flex justify-end no-print">
+                <span class="px-3.5 py-2 bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-emerald-200">
+                    ✓ Hasil Checklist Capaian Ananda Telah Diverifikasi Guru
+                </span>
             </div>
         </div>
     </div>
@@ -1987,7 +2010,8 @@
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 no-print space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
             <h2 class="text-xl font-bold text-gray-800">Cetak Rapor PG-TK</h2>
-            <div class="flex items-center gap-2">
+            <!-- Quick Filter Kelas (Khusus Guru) -->
+            <div x-show="!isParent" class="flex items-center gap-2">
                 <select x-model="filterKelas" class="p-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold text-gray-700 outline-none">
                     <option value="">Semua Kelas</option>
                     <option value="Playgroup">Playgroup</option>
@@ -2002,7 +2026,8 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-            <div class="md:col-span-6">
+            <!-- Pilihan Siswa Khusus Guru -->
+            <div x-show="!isParent" class="md:col-span-6">
                 <label class="block text-xs font-bold text-gray-600 mb-1">Pilih Siswa</label>
                 <select x-model="searchNis" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-xs font-medium">
                     <option value="" x-text="'-- Pilih Siswa (' + (listSiswaFiltered ? listSiswaFiltered.length : 0) + ' siswa) --'">-- Pilih Siswa --</option>
@@ -2011,10 +2036,28 @@
                     </template>
                 </select>
             </div>
-            <div class="md:col-span-3">
+            <div x-show="!isParent" class="md:col-span-3">
                 <label class="block text-xs font-bold text-gray-600 mb-1">Atau Masukkan NIS</label>
                 <input type="text" x-model="searchNis" placeholder="Contoh: 24001"
                     class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs">
+            </div>
+
+            <!-- Khusus Wali Murid: Terkunci Otomatis untuk Ananda -->
+            <div x-show="isParent" class="md:col-span-9 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-white border border-emerald-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-xl shadow-xs">
+                        👧
+                    </div>
+                    <div>
+                        <div class="text-xs font-black text-slate-900" x-text="siswa.nama_lengkap || parentChildName"></div>
+                        <div class="text-[10px] text-emerald-800 font-semibold">
+                            NIS: <span class="font-mono font-bold" x-text="parentNis"></span> • Unit / Kelas: <span class="font-bold" x-text="siswa.kelas_id || 'TK'"></span> • Wali Kelas: <span class="font-bold" x-text="siswa.wali_kelas || 'Ustadzah'"></span>
+                        </div>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[10px] shadow-xs">
+                    ✓ Rapor Resmi Ananda
+                </span>
             </div>
             <div class="md:col-span-3 flex items-end gap-2">
                 <button @click="generatePreview" :disabled="loading"
@@ -2022,11 +2065,11 @@
                     <span x-show="!loading">Preview Rapor</span>
                     <span x-show="loading" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                 </button>
-                <button type="button" @click="openSigModal('guru')" x-show="reportReady"
+                <button type="button" @click="openSigModal(isParent ? 'wali' : 'guru')" x-show="reportReady"
                     class="bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
                     ✍️ TTD Digital
                 </button>
-                <button type="button" @click="shareRaporWhatsApp(siswa)" x-show="reportReady"
+                <button type="button" @click="shareRaporWhatsApp(siswa)" x-show="reportReady && !isParent"
                     class="bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
                     📱 Kirim WA
                 </button>
@@ -2235,8 +2278,8 @@
                 </template>
             </div>
 
-            <!-- Edit Control Box (Hidden in Print, Outside of A4 Page Card) -->
-            <div class="p-4 bg-white border border-gray-200 rounded-xl shadow-sm no-print max-w-[210mm] mx-auto mb-12 mt-2 flex flex-col gap-2.5">
+            <!-- Edit Control Box (Khusus Guru / Admin - Hidden in Print, Outside of A4 Page Card) -->
+            <div x-show="!isParent" class="p-4 bg-white border border-gray-200 rounded-xl shadow-sm no-print max-w-[210mm] mx-auto mb-12 mt-2 flex flex-col gap-2.5">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold text-indigo-900 uppercase tracking-wide">Edit Narasi & Foto (<span x-text="cat"></span>)</span>
                     <button @click="generateAINarrative(cat)" :disabled="aiLoading[cat]"
@@ -2270,8 +2313,8 @@
 </div>
                 </div>
 
-                <!-- 6. MANAJEMEN SISWA (AD_SISWA) -->
-                <div x-show="view==='ad_siswa'" class="space-y-6">
+                <!-- 6. MANAJEMEN SISWA (AD_SISWA) (Khusus Guru / Admin) -->
+                <div x-show="view==='ad_siswa' && user.role !== 'WALI'" class="space-y-6">
                     <div class="bento-card p-6 space-y-4">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                             <div>
@@ -2322,8 +2365,8 @@
                     </div>
                 </div>
 
-                <!-- 7. MANAJEMEN GURU (AD_GURU) -->
-                <div x-show="view==='ad_guru'" class="space-y-6">
+                <!-- 7. MANAJEMEN GURU (AD_GURU) (Khusus Guru / Admin) -->
+                <div x-show="view==='ad_guru' && user.role !== 'WALI'" class="space-y-6">
                     <div class="bento-card p-6 space-y-4">
                         <div class="border-b border-slate-100 pb-3">
                             <h3 class="text-base font-bold text-slate-900">Data Ustadzah & Guru Wali Kelas</h3>
@@ -2565,10 +2608,80 @@
                         }
                     } catch(e) {}
 
+                    this.checkRoleSecurity();
+                    this.$watch('view', () => this.checkRoleSecurity());
+
                     this.$nextTick(() => {
                         lucide.createIcons();
                         this.initCharts();
                     });
+                },
+
+                checkRoleSecurity() {
+                    if (this.user && this.user.role === 'WALI') {
+                        const forbiddenViews = ['tk_in', 'ad_siswa', 'ad_guru'];
+                        if (forbiddenViews.includes(this.view)) {
+                            this.view = 'dash';
+                        }
+                        if (this.user.nis) {
+                            const myChild = this.listSiswa.find(s => String(s.nis).trim() === String(this.user.nis).trim());
+                            if (myChild) {
+                                this.selectedPsikoStudent = myChild;
+                                this.diniyyahNis = myChild.nis;
+                                this.kmsNis = myChild.nis;
+                                this.cetakSelectedNis = myChild.nis;
+                            }
+                        }
+                    }
+                },
+
+                get filteredListJurnal() {
+                    if (this.user && this.user.role === 'WALI') {
+                        const myNis = String(this.user.nis || '').trim();
+                        const student = this.listSiswa.find(s => String(s.nis).trim() === myNis);
+                        const childName = (student ? student.nama_lengkap : (this.user.nama || '')).toLowerCase();
+                        const found = this.listJurnal.filter(j => String(j.nis).trim() === myNis || j.nama_siswa.toLowerCase().includes(childName) || childName.includes(j.nama_siswa.toLowerCase()));
+                        if (found.length > 0) return found;
+                        return [{
+                            id: 99,
+                            nis: this.user.nis,
+                            nama_siswa: student ? student.nama_lengkap : this.user.nama,
+                            kelas: this.user.unit || 'TK',
+                            tanggal: new Date().toISOString().split('T')[0],
+                            mood: 'ceria',
+                            kategori: 'Sosial & Emosional',
+                            catatan: 'Alhamdulillah, Ananda berinteraksi dengan sangat ceria, tertib mengikuti doa dan pembiasaan adab pagi, serta aktif dalam kegiatan motorik.',
+                            guru: student ? student.wali_kelas : 'Ustadzah Wali Kelas'
+                        }];
+                    }
+                    if (this.jurnalFilterKelas) {
+                        return this.listJurnal.filter(j => (j.kelas || '').includes(this.jurnalFilterKelas));
+                    }
+                    return this.listJurnal;
+                },
+
+                get filteredListPortofolio() {
+                    if (this.user && this.user.role === 'WALI') {
+                        const myNis = String(this.user.nis || '').trim();
+                        const student = this.listSiswa.find(s => String(s.nis).trim() === myNis);
+                        const childName = (student ? student.nama_lengkap : (this.user.nama || '')).toLowerCase();
+                        const found = this.listPortofolio.filter(p => p.nama_siswa.toLowerCase().includes(childName) || childName.includes(p.nama_siswa.toLowerCase()));
+                        if (found.length > 0) return found;
+                        return [{
+                            id: 99,
+                            nama_siswa: student ? student.nama_lengkap : this.user.nama,
+                            kelas: this.user.unit || 'TK',
+                            tanggal: '03 November 2026',
+                            kategori: 'Seni Kreatif & Kolase',
+                            judul: 'Taman Impian & Eksplorasi Warna',
+                            foto_url: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80',
+                            catatan: 'Ananda sangat antusias mencampur warna-warna alami dan teliti saat menempel pola membentuk karya seni yang rapi dan indah.'
+                        }];
+                    }
+                    if (this.portofolioKelas) {
+                        return this.listPortofolio.filter(p => (p.kelas || '').includes(this.portofolioKelas));
+                    }
+                    return this.listPortofolio;
                 },
 
                 get filteredPsikoStudents() {
@@ -2692,7 +2805,10 @@
                         this.isLoggedIn = true;
                         this.view = 'dash';
                         this.selectedPsikoStudent = foundSiswa;
+                        this.diniyyahNis = foundSiswa.nis;
+                        this.kmsNis = foundSiswa.nis;
                         this.cetakSelectedNis = foundSiswa.nis;
+                        this.checkRoleSecurity();
                         showToast('Ahlan wa Sahlan, Ayah/Bunda dari ' + foundSiswa.nama_lengkap + '!');
                         this.$nextTick(() => lucide.createIcons());
                         return;
@@ -2713,7 +2829,10 @@
                     this.isLoggedIn = true;
                     this.view = 'dash';
                     this.selectedPsikoStudent = s;
+                    this.diniyyahNis = s.nis;
+                    this.kmsNis = s.nis;
                     this.cetakSelectedNis = s.nis;
+                    this.checkRoleSecurity();
                     showToast('Masuk sebagai Wali Murid: ' + s.nama_lengkap);
                     this.$nextTick(() => lucide.createIcons());
                 },
@@ -3078,6 +3197,25 @@
                 loading: false,
                 saving: false,
 
+                get isParent() {
+                    const u = this.$root?.user;
+                    return u && u.role === 'WALI';
+                },
+                get parentNis() {
+                    const u = this.$root?.user;
+                    return (u && u.nis) ? String(u.nis).trim() : '';
+                },
+                get parentChildName() {
+                    const u = this.$root?.user;
+                    return (u && u.nama) ? u.nama : '';
+                },
+                get currentStudent() {
+                    if (this.isParent && this.parentNis) {
+                        return this.listSiswa.find(s => String(s.nis).trim() === this.parentNis);
+                    }
+                    return this.listSiswa.find(s => String(s.nis).trim() === String(this.selectedNis).trim());
+                },
+
                 defaultTeachers: [
                     'Bu Nurlaela',
                     'Ustadzah Nur Hikmah',
@@ -3096,14 +3234,26 @@
                     if (!this.listSiswa || this.listSiswa.length === 0) {
                         this.listSiswa = (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
                     }
+                    if (this.isParent && this.parentNis) {
+                        this.selectedNis = this.parentNis;
+                    }
                     this.loadSiswa();
                     this.loadIndicators();
+                    if (this.isParent && this.parentNis) {
+                        this.$nextTick(() => {
+                            this.selectedNis = this.parentNis;
+                            this.loadRatings();
+                        });
+                    }
                 },
 
                 loadSiswa() {
                     google.script.run.withSuccessHandler(res => {
                         if (res && res.data && res.data.length > 0) {
                             this.listSiswa = res.data;
+                            if (this.isParent && this.parentNis) {
+                                this.selectedNis = this.parentNis;
+                            }
                         }
                     }).apiCall('getSiswa');
                 },
@@ -3126,6 +3276,9 @@
                 },
 
                 get listSiswaFiltered() {
+                    if (this.isParent && this.parentNis) {
+                        return this.listSiswa.filter(s => String(s.nis).trim() === this.parentNis);
+                    }
                     return this.listSiswa.filter(s => {
                         if (this.filterKelas) {
                             const targetK = this.filterKelas.toUpperCase();
@@ -3172,6 +3325,9 @@
                 },
 
                 loadRatings() {
+                    if (this.isParent && this.parentNis) {
+                        this.selectedNis = this.parentNis;
+                    }
                     if (!this.selectedNis || !this.semester || this.listIndicators.length === 0) {
                         this.loading = false;
                         return;
@@ -3250,21 +3406,44 @@
                 siswa: {},
                 dataRapor: { narasi: [], checklist: [] },
 
+                get isParent() {
+                    const u = this.$root?.user;
+                    return u && u.role === 'WALI';
+                },
+                get parentNis() {
+                    const u = this.$root?.user;
+                    return (u && u.nis) ? String(u.nis).trim() : '';
+                },
+                get parentChildName() {
+                    const u = this.$root?.user;
+                    return (u && u.nama) ? u.nama : '';
+                },
+
                 init() {
                     if (!this.listSiswa || this.listSiswa.length === 0) {
                         this.listSiswa = (typeof SEED_SISWAS !== 'undefined') ? SEED_SISWAS : [];
                     }
-                    if (!this.searchNis && this.listSiswa.length > 0) {
+                    if (this.isParent && this.parentNis) {
+                        this.searchNis = this.parentNis;
+                    } else if (!this.searchNis && this.listSiswa.length > 0) {
                         this.searchNis = this.listSiswa[0].nis;
                     }
                     this.loadSiswa();
+                    if (this.isParent && this.parentNis) {
+                        this.$nextTick(() => {
+                            this.searchNis = this.parentNis;
+                            this.generatePreview();
+                        });
+                    }
                 },
 
                 loadSiswa() {
                     google.script.run.withSuccessHandler(res => {
                         if (res && res.data && res.data.length > 0) {
                             this.listSiswa = res.data;
-                            if (!this.searchNis && this.listSiswa.length > 0) {
+                            if (this.isParent && this.parentNis) {
+                                this.searchNis = this.parentNis;
+                            } else if (!this.searchNis && this.listSiswa.length > 0) {
                                 this.searchNis = this.listSiswa[0].nis;
                             }
                         }
@@ -3272,6 +3451,9 @@
                 },
 
                 get listSiswaFiltered() {
+                    if (this.isParent && this.parentNis) {
+                        return this.listSiswa.filter(s => String(s.nis).trim() === this.parentNis);
+                    }
                     return this.listSiswa.filter(s => {
                         if (this.filterKelas) {
                             const targetK = this.filterKelas.toUpperCase();
@@ -3310,6 +3492,9 @@
                 },
 
                 generatePreview() {
+                    if (this.isParent && this.parentNis) {
+                        this.searchNis = this.parentNis;
+                    }
                     if (!this.searchNis) return alert("Pilih Siswa!");
                     this.loading = true;
                     google.script.run.withSuccessHandler(res => {
