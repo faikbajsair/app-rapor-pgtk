@@ -1,8 +1,3 @@
-email_kantor,password,nama,role,unit
-admin@alimamischool.com,admin123,Admin Sekolah,Admin,ALL
-nurlaela@alimamischool.com,nurlaela-playgroup,Bu Nurlaela,Guru,TK
-nurhikmah@alimamischool.com,nurhikmah-tkb,Ustadzah Nur Hikmah,Guru,TK
-halizah@alimamischool.com,halizah-tkb,Ustadzah Halizah,Guru,TK
-muttiaghina@alimamischool.com,muttiaghina-tkb,Ustadzah Muttia Ghina,Guru,TK
-dian@alimamischool.com,dian-tka,Ustadzah Dian,Guru,TK
-sahla@alimamischool.com,sahla-tka,Ustadzah Sahla,Guru,TK
+email_kantor,kode_akses,nama,role,unit
+admin@contoh-sekolah.sch.id,PIN-ADMIN-01,Admin Sekolah,Admin,ALL
+guru1@contoh-sekolah.sch.id,PIN-GURU-01,Contoh Nama Guru,Guru,TK
